@@ -5,11 +5,12 @@
     <link rel="stylesheet" href="components/bootstrap/bootstrap-responsive.min.css">
     <link rel="stylesheet" href="statistika.css">
     <script src="components/jquery/jquery-1.9.1.min.js"></script>
-    <script src="components/angular/angular.min.js"></script>
+    <script src="components/angular/angular.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1/jquery-ui.min.js"></script>
     <script src="components/angular-ui/sortable.js"></script>
     <script src="components/angular-ui/if.js"></script>
     <script src="components/persist-min.js"></script>
+    <script src="components/underscore-min.js"></script>
     <script src="statistika.js"></script>
   </head>
   <body ng-controller="MainCtrl">
@@ -17,17 +18,22 @@
       <button ng-click="reset()">vymazat data</button>
     </div>
 
-    <section ng-controller="DescriptionCtrl">
+    <section ng-controller="VariablesCtrl">
       <h1>Formulace statistického šetření</h1>
       <h2>Statistické znaky</h2>
-      <dl>
-        <!-- huge hack - https://github.com/angular/angular.js/issues/1891 -->
-        <div ng-repeat="variable in header.variables">
-          <dt><input type="text" ng-model="variable.name"></dt>
-          <dd><textarea ng-model="variable.description"
-                        placeholder="Description of your variable"></textarea></dd>
-        </div>
-      </dl>
+
+      <fieldset ng-repeat="variable in header.variables">
+        <h3 class="variable"><input type="text" ng-model="variable.name" ng-required="true"></h3>
+        <label>
+          <textarea ng-model="variable.description"
+                    placeholder="Description of your variable"></textarea>
+        </label>
+        <label>
+          <select ng-model="variable.scale" ng-options="scale.key as scale.description for scale in scales">
+            <option value=""></option>
+          </select>
+        </label>
+      </div>
     </section>
 
     <h1>Data</h1>
@@ -36,11 +42,11 @@
         <thead>
           <tr>
             <td/>
-            <td ng-repeat="variable in header.variables">
+              <td ng-click="orderBy(variable)" ng-repeat="variable in header.variables" class="sortable" ng-class="variable.order">
               {{ variable.name }}
             </td>
             <td>
-              <button ng-click="addRow()" title="add row">&plus;</button>
+              <button ng-click="addRow()" title="add row">&plus; řádek</button>
             </td>
           </tr>
         </thead>

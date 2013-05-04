@@ -16,3 +16,17 @@ thead input {
   top: 0;
   right: 0;
 }
+
+h3.variable input {
+  border: none;
+  box-shadow: none;
+  font-weight: bold;
+}
+
+td.sortable:not(.asc) {
+  cursor: s-resize;
+}
+
+td.sortable.asc {
+  cursor: n-resize;
+}

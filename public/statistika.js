@@ -1,4 +1,3 @@
-
 var statistika = angular.module('statistika', ['ui.sortable', 'ui.if']);
 var persist = statistika.persist = new Persist.Store('Statistika');
 
@@ -23,8 +22,21 @@ Variable.create = function(object) {
   var variable = Object.create(Variable.prototype);
   variable.name = object.name;
   variable.description = object.description;
+  variable.scale = object.scale;
   return variable;
 };
+
+function Scale(key, description) {
+  this.key = key;
+  this.description = description;
+  Scale.repo[key] = this;
+}
+
+Scale.find = function(name) {
+  return Scale.repo[name];
+};
+
+Scale.repo = {};
 
 function Column(value) {
   this.value = value;
@@ -49,18 +61,23 @@ Row.create = function(object) {
   return row;
 };
 
-
-function Store(name, filter) {
+function modelChanged(callback) {
   return function(newVal, oldVal) {
     if(angular.equals(newVal, oldVal))
       return;
 
+    callback.call(newVal, oldVal);
+  };
+}
+
+function Store(name, filter) {
+  return modelChanged(function(newVal){
     if(filter) {
       newVal = newVal.filter(filter);
     }
 
     persist.set(name, JSON.stringify(newVal));
-  };
+  });
 }
 
 Store.keys = [];
@@ -96,6 +113,8 @@ function MainCtrl($scope) {
   $scope.header = Store.get($scope, 'header', Header.create) || new Header(['first', 'second']);
   $scope.rows = Store.get($scope, 'rows', function(rows) { return rows.map(Row.create); }) || [];
 
+  $scope.variables = $scope.header.variables;
+
   $scope.reset = function(){
     if(confirm("Opravdu vymazat všechna uložená data?")) {
       Store.clear();
@@ -104,11 +123,31 @@ function MainCtrl($scope) {
   };
 }
 
-function DescriptionCtrl($scope){
-
+function VariablesCtrl($scope){
+  $scope.scales = [
+    new Scale("nominal", "nominální"),
+    new Scale("ordinal", "ordinální"),
+    new Scale("quantitative", "kvantitativní metrická"),
+    new Scale("absolute", "absolutní metrická")
+  ];
 }
 
 function DataCtrl($scope) {
+  var orderedBy, reversed, sorted;
+
+
+  $scope.unsorted = function(){
+    if(sorted){
+      sorted = false;
+      return;
+    }
+
+    orderedBy = null;
+    reversed = null;
+  };
+
+  $scope.$watch('rows', $scope.unsorted);
+
   $scope.removeRow = function(row) {
     var index = $scope.rows.indexOf(row);
     $scope.rows.splice(index, 1);
@@ -125,11 +164,38 @@ function DataCtrl($scope) {
 
   $scope.addRow = function(){
     $scope.rows.push($scope.newRow());
+    $scope.unsorted();
   };
 
   $scope.updatePosition = function(from, to) {
     var elements = $scope.rows.splice(from, 1);
     $scope.rows.splice(to, 0, elements[0]);
+  };
+
+  $scope.addVariable = function() {
+    $scope.variables.push(new Variable());
+  };
+
+  $scope.orderBy = function(variable) {
+    var column = $scope.variables.indexOf(variable);
+
+    $scope.rows = _($scope.rows).sortBy(function(row) { return row.columns[column].value; });
+
+    // cleanup old state
+    if(orderedBy) { delete orderedBy.order; }
+
+    if(orderedBy === variable) {
+      if(!reversed) {
+        $scope.rows.reverse();
+      }
+      reversed = !reversed;
+    } else {
+      orderedBy = variable;
+      reversed = null;
+    }
+
+    variable.order = reversed ? 'desc' : 'asc';
+    sorted = true;
   };
 
   $scope.sortableOptions = {

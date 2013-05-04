@@ -1,3 +1,3 @@
 guard 'livereload' do
-  watch(%r{.+\.(css|js|html)})
+  watch(%r{public(\/.+\.(?:css|js|html))}) {|m| m[1] }
 end
