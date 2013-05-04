@@ -1,2 +1,2 @@
 guard: bundle exec guard
-web: rackup
+web: bundle exec rackup
