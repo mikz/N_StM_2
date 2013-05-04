@@ -4,7 +4,7 @@ use Rack::Static, urls: [""], root: public_root, index: 'index.html', header_rul
   [ %w{js}, 'Content-Type' => 'application/javascript;charset=utf-8' ],
   [ %w{html}, 'Content-Type' => 'text/html;charset=utf-8'],
   [ %w{css}, 'Content-Type' => 'text/css;charset=utf-8'],
-
+  [ :all, {} ]
 ]
 
 run lambda { |env|
