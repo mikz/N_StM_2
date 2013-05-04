@@ -240,6 +240,7 @@ function DataCtrl($scope) {
   };
 
   $scope.sortableOptions = {
+    // containment: 'table', // prevents from moving to last position
     items: 'tr',
     helper: 'clone',
     axis: 'y',

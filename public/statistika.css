@@ -3,7 +3,7 @@
   color: grey;
 }
 
-td.handle {
+tbody.ui-sortable tr {
   cursor: move;
 }
 
@@ -33,4 +33,25 @@ td.sortable.asc {
 
 p.error {
   color: red;
+}
+
+.icon-reorder {
+  font-size: 150%;
+}
+
+*[ng-repeat] > input {
+  /* the FUCK? who wants 10px bottom margin? */
+  margin-bottom: 0;
+}
+
+*[ng-repeat] {
+  margin-bottom: 10px;
+}
+
+tr[ng-repeat] td {
+  padding-bottom: 10px;
+}
+
+#data tbody tr:last-child{
+  margin-bottom: 1em;
 }

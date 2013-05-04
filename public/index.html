@@ -2,8 +2,10 @@
 <html ng-app="statistika">
   <head>
     <meta charset="utf-8">
+    <link rel="stylesheet" href="components/normalize.css">
     <link rel="stylesheet" href="components/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="components/bootstrap/bootstrap-responsive.min.css">
+    <link rel="stylesheet" href="components/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="statistika.css">
 
     <script>
@@ -29,78 +31,78 @@
       <button ng-click="reset()">vymazat data</button>
     </div>
 
-    <section ng-controller="VariablesCtrl">
-      <h1>Formulace statistického šetření</h1>
-      <h2>Statistické znaky</h2>
+    <div class="container">
+      <section ng-controller="VariablesCtrl">
+        <h1>Formulace statistického šetření</h1>
+        <h2>Statistické znaky</h2>
 
-      <fieldset ng-repeat="variable in header.variables">
-        <h3 class="variable"><input type="text" ng-model="variable.name" ng-required="true"></h3>
-        <label>
-          <textarea ng-model="variable.description"
-                    placeholder="Description of your variable"></textarea>
-        </label>
-        <label>
-          <select ng-model="variable.scale" ng-options="scale.key as scale.description for scale in scales">
-            <option value=""></option>
-          </select>
-        </label>
+        <fieldset ng-repeat="variable in header.variables">
+          <h3 class="variable"><input type="text" ng-model="variable.name" ng-required="true"></h3>
+          <label>
+            <textarea ng-model="variable.description"
+                      placeholder="Description of your variable"></textarea>
+          </label>
+          <label>
+            <select ng-model="variable.scale" ng-options="scale.key as scale.description for scale in scales">
+              <option value=""></option>
+            </select>
+          </label>
 
-        <div ui-if="variable.scale == 'absolute'">
-          <h3>Skupiny <button ng-click="addGroup(variable)">&plus;</button></h3>
-          <ul>
-            <li ng-repeat="group in variable.groups">
-              <input type="number" name="min" ng-model="group.min" ng-required="true">
-              <input type="number" name="max" ng-model="group.max" ng-required="true">
-              <button ng-click="removeGroup(variable, group)">&minus;</button>
-              <!-- refactor this massive condition -->
-              <p class="error" ui-if="group.min && group.max && group.min >= group.max">
-                minimum ({{group.min}}) musí být menší než maximum ({{group.max}})
-              </p>
-              <p class="error" ui-if="variable.groups[$index + 1] && group.max != variable.groups[$index + 1].min">
-                nenavazuje na dalsi skupinu ({{ group.max }} != {{ variable.groups[$index + 1].min }})
-              </p>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </section>
+          <div ui-if="variable.scale == 'absolute'">
+            <h3>Skupiny <button ng-click="addGroup(variable)">&plus;</button></h3>
+            <ul>
+              <li ng-repeat="group in variable.groups">
+                <input type="number" name="min" ng-model="group.min" ng-required="true">
+                <input type="number" name="max" ng-model="group.max" ng-required="true">
+                <button ng-click="removeGroup(variable, group)">&minus;</button>
+                <!-- refactor this massive condition -->
+                <p class="error" ui-if="group.min && group.max && group.min >= group.max">
+                  minimum ({{group.min}}) musí být menší než maximum ({{group.max}})
+                </p>
+                <p class="error" ui-if="variable.groups[$index + 1] && group.max != variable.groups[$index + 1].min">
+                  nenavazuje na dalsi skupinu ({{ group.max }} != {{ variable.groups[$index + 1].min }})
+                </p>
+              </li>
+            </ul>
+          </div>
+        </fieldset>
+      </section>
 
-    <h1>Data</h1>
-    <div ng-controller="DataCtrl">
-      <table>
-        <thead>
-          <tr>
-            <td/>
+      <h1>Data</h1>
+      <div ng-controller="DataCtrl">
+        <table id="data">
+          <thead>
+            <tr>
+              <td/>
               <td ng-click="orderBy(variable)" ng-repeat="variable in header.variables" class="sortable" ng-class="variable.order">
-              {{ variable.name }}
-            </td>
-            <td>
-              <button ng-click="addRow()" title="add row">&plus; řádek</button>
-            </td>
-          </tr>
-        </thead>
+                {{ variable.name }}
+              </td>
+              <td>
+                <button ng-click="addRow()" title="add row">&plus; řádek</button>
+              </td>
+            </tr>
+          </thead>
 
-        <tfoot>
-          <tr>
-            <td/>
-            <td ng-repeat="column in header.columns">{{column.value}}</td>
-          </tr>
-        </tfoot>
+          <tfoot>
+            <tr>
+              <td/>
+              <td ng-repeat="column in header.columns">{{column.value}}</td>
+            </tr>
+          </tfoot>
 
-        <tbody ui-sortable="sortableOptions">
-          <tr ng-repeat="row in rows">
-            <td class="handle">
-              {{ $index + 1 }}.
-            </td>
-            <td ng-repeat="column in row.columns">
-              <input type="text" ng-model="column.value">
-            </td>
-            <td>
-              <button ng-click="removeRow(row)" title="remove row" tabindex="-1">&minus;</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+          <tbody ui-sortable="sortableOptions">
+            <tr ng-repeat="row in rows">
+              <td><i class="icon-reorder"></i></td>
+              <td ng-repeat="column in row.columns">
+                <input type="text" ng-model="column.value">
+              </td>
+              <td>
+                <button ng-click="removeRow(row)" title="remove row" tabindex="-1">&minus;</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </body>
 </html>
