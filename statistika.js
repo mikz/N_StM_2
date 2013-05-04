@@ -1,6 +1,30 @@
 
-var statistika = angular.module('statistika', ['ui.sortable']);
+var statistika = angular.module('statistika', ['ui.sortable', 'ui.if']);
 var persist = statistika.persist = new Persist.Store('Statistika');
+
+
+function Header(variables){
+  this.variables = $.map(variables, function(value){ return new Variable(value); });
+  this.length = variables.length;
+}
+
+Header.create = function(object) {
+  var header = Object.create(Header.prototype);
+  header.variables = object.variables.map(Variable.create);
+  header.length = object.length;
+  return header;
+};
+
+function Variable(name) {
+  this.name = name;
+}
+
+Variable.create = function(object) {
+  var variable = Object.create(Variable.prototype);
+  variable.name = object.name;
+  variable.description = object.description;
+  return variable;
+};
 
 function Column(value) {
   this.value = value;
@@ -26,41 +50,58 @@ Row.create = function(object) {
 };
 
 
-function GridCtrl($scope) {
-  var header = persist.get('header');
-  var rows = persist.get('rows');
+function Store(name, filter) {
+  return function(newVal, oldVal) {
+    if(angular.equals(newVal, oldVal))
+      return;
 
-  if(header) {
-    header = JSON.parse(header);
-    header = Row.create(header);
+    if(filter) {
+      newVal = newVal.filter(filter);
+    }
+
+    persist.set(name, JSON.stringify(newVal));
+  };
+}
+
+Store.keys = [];
+
+Store.get = function($scope, name, transform) {
+  var persisted = persist.get(name);
+
+  if(persisted) {
+    persisted = JSON.parse(persisted);
+    persisted = transform(persisted);
   } else {
-    header = new Row(['first', 'second']);
+    persisted = null;
   }
 
-  if(rows) {
-    rows = JSON.parse(rows);
-    rows = rows.map(Row.create);
-  } else {
-    rows = [];
-  }
+  return persisted;
+};
 
-  $scope.header = header;
-  $scope.rows = rows;
+Store.setup = function($scope, name, filter) {
+  Store.keys.push(name);
+  $scope.$watch(name, Store(name, filter), true);
+};
 
-  $scope.$watch('rows', function(newVal, oldVal) {
-    if(!angular.equals(newVal, oldVal)) {
-      console.log('rows updated');
-      persist.set('rows', JSON.stringify(newVal));
-    }
-  }, true);
+Store.clear = function() {
+  Store.keys.forEach(function(key) {
+    persist.remove(key);
+  });
+};
 
-  $scope.$watch('header', function(newVal, oldVal) {
-    if(!angular.equals(newVal, oldVal)) {
-      console.log('header updated');
-      persist.set('header', JSON.stringify(newVal));
-    }
-  }, true);
+function MainCtrl($scope) {
+  Store.setup($scope, 'header');
+  Store.setup($scope, 'rows');
 
+  $scope.header = Store.get($scope, 'header', Header.create) || new Header(['first', 'second']);
+  $scope.rows = Store.get($scope, 'rows', function(rows) { return rows.map(Row.create); }) || [];
+}
+
+function DescriptionCtrl($scope){
+
+}
+
+function DataCtrl($scope) {
   $scope.removeRow = function(row) {
     var index = $scope.rows.indexOf(row);
     $scope.rows.splice(index, 1);

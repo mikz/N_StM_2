@@ -7,18 +7,32 @@
     <script src="components/angular/angular.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1/jquery-ui.min.js"></script>
     <script src="components/angular-ui/sortable.js"></script>
+    <script src="components/angular-ui/if.js"></script>
     <script src="components/persist-min.js"></script>
     <script src="statistika.js"></script>
   </head>
-  <body>
-    <h2>Grid</h2>
-    <div ng-controller="GridCtrl">
+  <body ng-controller="MainCtrl">
+    <section ng-controller="DescriptionCtrl">
+      <h1>Formulace statistického šetření</h1>
+      <h2>Statistické znaky</h2>
+      <dl>
+        <!-- huge hack - https://github.com/angular/angular.js/issues/1891 -->
+        <div ng-repeat="variable in header.variables">
+          <dt><input type="text" ng-model="variable.name"></dt>
+          <dd><textarea ng-model="variable.description"
+                        placeholder="Description of your variable"></textarea></dd>
+        </div>
+      </dl>
+    </section>
+
+    <h1>Data</h1>
+    <div ng-controller="DataCtrl">
       <table>
         <thead>
           <tr>
             <td/>
-            <td ng-repeat="column in header.columns">
-              <input type="text" ng-model="column.value">
+            <td ng-repeat="variable in header.variables">
+              {{ variable.name }}
             </td>
             <td>
               <button ng-click="addRow()" title="add row">&plus;</button>
@@ -42,7 +56,7 @@
               <input type="text" ng-model="column.value">
             </td>
             <td>
-              <button ng-click="removeRow(row)" title="remove row">&minus;</button>
+              <button ng-click="removeRow(row)" title="remove row" tabindex="-1">&minus;</button>
             </td>
           </tr>
         </tbody>
