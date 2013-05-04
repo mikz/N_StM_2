@@ -95,6 +95,13 @@ function MainCtrl($scope) {
 
   $scope.header = Store.get($scope, 'header', Header.create) || new Header(['first', 'second']);
   $scope.rows = Store.get($scope, 'rows', function(rows) { return rows.map(Row.create); }) || [];
+
+  $scope.reset = function(){
+    if(confirm("Opravdu vymazat všechna uložená data?")) {
+      Store.clear();
+      window.location.reload();
+    }
+  };
 }
 
 function DescriptionCtrl($scope){

@@ -10,3 +10,9 @@ td.handle {
 thead input {
   font-weight: bold;
 }
+
+#reset-persisted-data {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
