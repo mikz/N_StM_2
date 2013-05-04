@@ -30,3 +30,7 @@ td.sortable:not(.asc) {
 td.sortable.asc {
   cursor: n-resize;
 }
+
+p.error {
+  color: red;
+}

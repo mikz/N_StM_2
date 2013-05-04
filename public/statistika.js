@@ -1,6 +1,18 @@
 var statistika = angular.module('statistika', ['ui.sortable', 'ui.if']);
 var persist = statistika.persist = new Persist.Store('Statistika');
 
+statistika.factory('$exceptionHandler', function ($log) {
+  var reset = Store.reset("Bohužel vaše uložená data nejsou kompatabilní s novou verzí. Chcete je smazat?");
+  var log = $log.error;
+  var report;
+
+  return function(error, cause) {
+    // does not work right now :(
+    // _errs.push(error);
+
+    (window.location.hostname == 'localhost' ? log : reset).apply(log, arguments);
+  };
+});
 
 function Header(variables){
   this.variables = $.map(variables, function(value){ return new Variable(value); });
@@ -16,6 +28,7 @@ Header.create = function(object) {
 
 function Variable(name) {
   this.name = name;
+  this.groups = [];
 }
 
 Variable.create = function(object) {
@@ -23,7 +36,22 @@ Variable.create = function(object) {
   variable.name = object.name;
   variable.description = object.description;
   variable.scale = object.scale;
+  variable.groups = object.groups.map(Group.create);
   return variable;
+};
+
+function Group(scale, min, max) {
+  this.scale = scale;
+  this.min = min;
+  this.max = max;
+}
+
+Group.create = function(object) {
+  var group = Object.create(Group.prototype);
+  group.scale = object.scale;
+  group.min = object.min;
+  group.max = object.max;
+  return group;
 };
 
 function Scale(key, description) {
@@ -71,13 +99,13 @@ function modelChanged(callback) {
 }
 
 function Store(name, filter) {
-  return modelChanged(function(newVal){
+  return function(newVal){
     if(filter) {
       newVal = newVal.filter(filter);
     }
 
     persist.set(name, JSON.stringify(newVal));
-  });
+  };
 }
 
 Store.keys = [];
@@ -106,6 +134,15 @@ Store.clear = function() {
   });
 };
 
+Store.reset = function(msg) {
+  return function(){
+    if(confirm(msg)) {
+      Store.clear();
+      window.location.reload();
+    }
+  };
+};
+
 function MainCtrl($scope) {
   $scope.columns = function() {
     return $scope.header.length;
@@ -124,12 +161,7 @@ function MainCtrl($scope) {
 
   $scope.variables = $scope.header.variables;
 
-  $scope.reset = function(){
-    if(confirm("Opravdu vymazat všechna uložená data?")) {
-      Store.clear();
-      window.location.reload();
-    }
-  };
+  $scope.reset = Store.reset("Opravdu vymazat všechna uložená data?");
 }
 
 function VariablesCtrl($scope){
@@ -139,6 +171,15 @@ function VariablesCtrl($scope){
     new Scale("quantitative", "kvantitativní metrická"),
     new Scale("absolute", "absolutní metrická")
   ];
+
+  $scope.addGroup = function(variable) {
+    variable.groups.push(new Group(variable.scale));
+  };
+
+  $scope.removeGroup = function(variable, group) {
+    var index = variable.groups.indexOf(group);
+    variable.groups.splice(index, 1);
+  };
 }
 
 function DataCtrl($scope) {
