@@ -107,11 +107,20 @@ Store.clear = function() {
 };
 
 function MainCtrl($scope) {
+  $scope.columns = function() {
+    return $scope.header.length;
+  };
+
+  $scope.newRow = function(){
+    var columns = new Array($scope.columns());
+    return new Row(columns);
+  };
+
   Store.setup($scope, 'header');
   Store.setup($scope, 'rows');
 
   $scope.header = Store.get($scope, 'header', Header.create) || new Header(['first', 'second']);
-  $scope.rows = Store.get($scope, 'rows', function(rows) { return rows.map(Row.create); }) || [];
+  $scope.rows = Store.get($scope, 'rows', function(rows) { return rows.map(Row.create); }) || [$scope.newRow()];
 
   $scope.variables = $scope.header.variables;
 
@@ -151,15 +160,6 @@ function DataCtrl($scope) {
   $scope.removeRow = function(row) {
     var index = $scope.rows.indexOf(row);
     $scope.rows.splice(index, 1);
-  };
-
-  $scope.columns = function() {
-    return $scope.header.length;
-  };
-
-  $scope.newRow = function(){
-    var columns = new Array($scope.columns());
-    return new Row(columns);
   };
 
   $scope.addRow = function(){
