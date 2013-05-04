@@ -1,0 +1,3 @@
+[submodule "components/closure-library"]
+	path = components/closure-library
+	url = http://code.google.com/p/closure-library/
