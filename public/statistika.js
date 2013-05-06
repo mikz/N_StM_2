@@ -237,22 +237,23 @@ function MainCtrl($scope) {
 }
 
 function VariableCtrl($scope){
-  var variable = $scope.variable;
-  var column = $scope.column(variable);
+  $scope.column = _($scope.column).partial($scope.variable);
 
-  $scope.groups = variable.group(column);
+  $scope.$watch('column()', function(column, old){
+    $scope.groups = $scope.variable.group(column);
+  }, true);
 
   $scope.addGroup = function() {
-    variable.groups.push(new Group(variable.scale));
+    $scope.variable.groups.push(new Group($scope.variable.scale));
   };
 
   $scope.removeGroup = function(group) {
-    var index = variable.groups.indexOf(group);
-    variable.groups.splice(index, 1);
+    var index = $scope.variable.groups.indexOf(group);
+    $scope.variable.groups.splice(index, 1);
   };
 
   $scope.canAddGroup = function() {
-    return variable.scale === "absolute" || variable.scale === "quantitative";
+    return $scope.variable.scale === "absolute" || $scope.variable.scale === "quantitative";
   };
 
   $scope.ordinalOptions = function() {
@@ -265,7 +266,7 @@ function VariableCtrl($scope){
         var items = $(event.target).find(options.items);
         $scope.$apply(function(){
           var groups = _(items).map(function(item) { return $(item).text().trim(); });
-          variable.order = _(groups).uniq();
+          $scope.variable.order = _(groups).uniq();
         });
       }
     };
