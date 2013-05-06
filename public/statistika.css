@@ -39,9 +39,13 @@ p.error {
   font-size: 150%;
 }
 
-*[ng-repeat] > input {
-  /* the FUCK? who wants 10px bottom margin? */
+/* the FUCK? who wants 10px bottom margin? */
+*[ng-repeat] > input, li[ng-repeat] form, li[ng-repeat] > form > input {
   margin-bottom: 0;
+}
+
+input[type=number] {
+  width: 103px;
 }
 
 *[ng-repeat] {

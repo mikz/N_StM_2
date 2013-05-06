@@ -32,11 +32,11 @@
     </div>
 
     <div class="container">
-      <section ng-controller="VariablesCtrl">
+      <section ng-controller="VariablesCtrl" class="row">
         <h1>Formulace statistického šetření</h1>
         <h2>Statistické znaky</h2>
 
-        <fieldset ng-repeat="variable in header.variables">
+        <fieldset class="span4" ng-repeat="variable in header.variables">
           <h3 class="variable"><input type="text" ng-model="variable.name" ng-required="true"></h3>
           <label>
             <textarea ng-model="variable.description"
@@ -48,28 +48,41 @@
             </select>
           </label>
 
-          <div ui-if="variable.scale == 'absolute'">
-            <h3>Skupiny <button ng-click="addGroup(variable)">&plus;</button></h3>
-            <ul>
+          <h3>Skupiny <button ng-show="canAddGroup(variable)" ng-click="addGroup(variable)">&plus;</button></h3>
+
+          <div ng-switch="variable.scale">
+            <ul ng-switch-when="nominal">
+
+            </ul>
+            <ol ng-switch-when="ordinal" ui-sortable="ordinalOptions($index)">
+              <li ng-repeat="group in variable.ordinal($index, rows)">
+                {{ group }}
+              </li>
+            </ol>
+            <ul ng-switch-when="quantitative">...</ul>
+            <ul ng-switch-when="absolute" >
               <li ng-repeat="group in variable.groups">
-                <input type="number" name="min" ng-model="group.min" ng-required="true">
-                <input type="number" name="max" ng-model="group.max" ng-required="true">
-                <button ng-click="removeGroup(variable, group)">&minus;</button>
-                <!-- refactor this massive condition -->
-                <p class="error" ui-if="group.min && group.max && group.min >= group.max">
-                  minimum ({{group.min}}) musí být menší než maximum ({{group.max}})
-                </p>
-                <p class="error" ui-if="variable.groups[$index + 1] && group.max != variable.groups[$index + 1].min">
-                  nenavazuje na dalsi skupinu ({{ group.max }} != {{ variable.groups[$index + 1].min }})
-                </p>
+                <!-- TODO: proper form validation -->
+                <form>
+                  <input type="number" name="min" ng-model="group.min" ng-required="true">
+                  <input type="number" name="max" ng-model="group.max" ng-required="true">
+                  <button ng-click="removeGroup(variable, group)">&minus;</button>
+                  <!-- refactor this massive condition -->
+                  <p class="error" ui-if="group.min && group.max && group.min >= group.max">
+                    minimum ({{group.min}}) musí být menší než maximum ({{group.max}})
+                  </p>
+                  <p class="error" ui-if="variable.groups[$index + 1] && group.max != variable.groups[$index + 1].min">
+                    nenavazuje na dalsi skupinu ({{ group.max }} != {{ variable.groups[$index + 1].min }})
+                  </p>
+                </form>
               </li>
             </ul>
           </div>
         </fieldset>
       </section>
 
-      <h1>Data</h1>
-      <div ng-controller="DataCtrl">
+      <section ng-controller="DataCtrl" class="row">
+        <h1>Data</h1>
         <table id="data">
           <thead>
             <tr>
@@ -102,7 +115,7 @@
             </tr>
           </tbody>
         </table>
-      </div>
+      </section>
     </div>
   </body>
 </html>

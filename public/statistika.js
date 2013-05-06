@@ -29,13 +29,27 @@ Header.create = function(object) {
 function Variable(name) {
   this.name = name;
   this.groups = [];
+  this.order = [];
 }
+
+Variable.prototype.ordinal = function (index, rows) {
+  var order = this.order;
+  var ordinal = _.chain(rows).
+    map(function(row) { return row.columns[index].value; }).
+    uniq().
+    sortBy(function(value) { var i; return (i = order.indexOf(value)) == -1 ? undefined : i; } ).
+
+    value();
+  this.order = ordinal;
+  return ordinal;
+};
 
 Variable.create = function(object) {
   var variable = Object.create(Variable.prototype);
   variable.name = object.name;
   variable.description = object.description;
   variable.scale = object.scale;
+  variable.order = object.order || [];
   variable.groups = object.groups.map(Group.create);
   return variable;
 };
@@ -179,6 +193,27 @@ function VariablesCtrl($scope){
   $scope.removeGroup = function(variable, group) {
     var index = variable.groups.indexOf(group);
     variable.groups.splice(index, 1);
+  };
+
+  $scope.canAddGroup = function(variable) {
+    return variable.scale === "absolute";
+  };
+
+  $scope.ordinalOptions = function(index) {
+    var options = {
+      items: 'li',
+      helper: 'clone',
+      axis: 'y',
+      // using bind to set $scope as in the function there is no closure?!
+      update: function(event, ui) {
+        var items = $(event.target).find(options.items);
+        var variable = $scope.variables[index];
+        $scope.$apply(function(){
+          variable.order = _(items).map(function(item) { return $(item).text().trim(); });
+        });
+      }
+    };
+    return options;
   };
 }
 
