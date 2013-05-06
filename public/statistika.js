@@ -32,24 +32,61 @@ function Variable(name) {
   this.order = [];
 }
 
-Variable.prototype.columns = function(index, rows) {
-  return _.chain(rows).
-    map(function(row) { return row.columns[index].value; }).
-    uniq().value();
+Variable.prototype.nominal = function(column) {
+  return _(column).uniq();
 };
 
-Variable.prototype.nominal = function(index, rows) {
-  return this.columns(index, rows);
-};
-
-Variable.prototype.ordinal = function(index, rows) {
+Variable.prototype.ordinal = function(column) {
   var order = this.order;
-  var ordinal = _(this.columns(index, rows)).
-                  sortBy(function(value) { var i; return (i = order.indexOf(value)) == -1 ? undefined : i; } );
+  var ordinal = _(column).sortBy(function(value) {
+    var i; return (i = order.indexOf(value)) == -1 ? undefined : i;
+  });
 
   this.order = ordinal;
   return ordinal;
 };
+
+Variable.prototype.absolute = Variable.prototype.quantitative = function(index, rows) {
+  return this.groups;
+};
+
+Variable.grouping = {
+  quantitative: function(group) {
+     return group.min <= this && this < group.max;
+  },
+  qualitative: function(group) {
+    return this == group;
+  }
+};
+
+Variable.prototype.grouping = function(){
+  switch(this.scale) {
+    case 'absolute':
+    case 'quantitative':
+      return Variable.grouping.quantitative;
+
+    case 'nominal':
+    case 'ordinal':
+      return Variable.grouping.qualitative;
+
+    default:
+      throw new Error('uknown scale: ' + scale);
+  }
+};
+
+Variable.prototype.elementGroups = function(column) {
+  var groups = this[this.scale](column);
+  var grouping = this.grouping();
+  return _(column).groupBy(function(value) {
+    return _(groups).find(_(grouping).bind(value));
+  });
+};
+
+Variable.prototype.elements = function(group) {
+  var grouping = this.grouping();
+
+};
+
 
 Variable.create = function(object) {
   var variable = Object.create(Variable.prototype);
@@ -183,7 +220,20 @@ function MainCtrl($scope) {
   $scope.variables = $scope.header.variables;
 
   $scope.reset = Store.reset("Opravdu vymazat všechna uložená data?");
+
+  $scope.column = function(variable) {
+    var index = $scope.variables.indexOf(variable);
+    return $scope.rows.map(function(row) { return row.columns[index].value; });
+  };
+
+  $scope.groups = function(variable){
+    var column = $scope.column(variable);
+    return variable[variable.scale](column);
+  };
+
+
 }
+
 
 function VariablesCtrl($scope){
   $scope.scales = [
@@ -205,6 +255,7 @@ function VariablesCtrl($scope){
   $scope.canAddGroup = function(variable) {
     return variable.scale === "absolute" || variable.scale === "quantitative";
   };
+
 
   $scope.ordinalOptions = function(index) {
     var options = {
@@ -294,5 +345,13 @@ function DataCtrl($scope) {
         $scope.updatePosition(ui.item.oldIndex, ui.item.index());
       });
     }
+  };
+}
+
+function TablesCtrl($scope) {
+  $scope.elements = function(variable, group) {
+    var grouping = variable.grouping();
+    var column = $scope.column(variable);
+    return _(column).filter(function(value) { return _(grouping).bind(value)(group); });
   };
 }

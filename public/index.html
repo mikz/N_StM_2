@@ -24,6 +24,8 @@
     <script src="components/persist-min.js"></script>
     <script src="components/underscore-min.js"></script>
     <script src="statistika.js" charset="utf-8"></script>
+
+    <script async src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=AM_HTMLorMML"></script>
   </head>
 
   <body ng-controller="MainCtrl">
@@ -53,19 +55,19 @@
           <div ng-switch="variable.scale">
 
             <ul ng-switch-when="nominal">
-              <li ng-repeat="group in variable.nominal($index, rows)">
+              <li ng-repeat="group in groups(variable)">
                 {{ group }}
               </li>
             </ul>
 
             <ol ng-switch-when="ordinal" ui-sortable="ordinalOptions($index)">
-              <li class="icon-reorder" ng-repeat="group in variable.ordinal($index, rows)">
+              <li class="icon-reorder" ng-repeat="group in groups(variable)">
                 {{ group }}
               </li>
             </ol>
 
-            <ul ng-switch-else>
-              <li ng-repeat="group in variable.groups">
+            <ol ng-switch-default>
+              <li ng-repeat="group in groups(variable)">
                 <!-- TODO: proper form validation -->
                 <form>
                   <input type="number" name="min" ng-model="group.min" ng-required="true">
@@ -116,6 +118,42 @@
               <td>
                 <button ng-show="rows.length > 1" ng-click="removeRow(row)" title="remove row" tabindex="-1">&minus;</button>
               </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section ng-controller="TablesCtrl" class="row">
+        <h1>Tabulky</h1>
+        <table ng-repeat="variable in variables">
+          <thead>
+            <tr>
+              <th>škála</th>
+              <th>absolutní četnosti</th>
+              <th>relativní četnosti</th>
+              <th>kumulativní četnosti</th>
+              <th>obecný moment 1. řádu</th>
+              <th>obecný moment 2. řádu</th>
+              <th>obecný moment 3. řádu</th>
+              <th>obecný moment 4. řádu</th>
+            </tr>
+            <tr>
+              <th>`x_i`</th>
+              <th>`n_i`</th>
+              <th>`n_i/n`</th>
+              <th>`sum n_i/n`</th>
+              <th>`x_i*n_i`</th>
+              <th>`x_i^2*n_i`</th>
+              <th>`x_i^3*n_i`</th>
+              <th>`x_i^4*n_i`</th>
+            </tr>
+
+          </thead>
+          <tbody>
+            <tr ng-repeat="group in groups(variable)">
+              <td>{{ $index  + 1}}</td>
+              <td>{{ group }}</td>
+              <td>{{ elements(variable, group) }}</td>
             </tr>
           </tbody>
         </table>
