@@ -51,16 +51,20 @@
           <h3>Skupiny <button ng-show="canAddGroup(variable)" ng-click="addGroup(variable)">&plus;</button></h3>
 
           <div ng-switch="variable.scale">
-            <ul ng-switch-when="nominal">
 
+            <ul ng-switch-when="nominal">
+              <li ng-repeat="group in variable.nominal($index, rows)">
+                {{ group }}
+              </li>
             </ul>
+
             <ol ng-switch-when="ordinal" ui-sortable="ordinalOptions($index)">
-              <li ng-repeat="group in variable.ordinal($index, rows)">
+              <li class="icon-reorder" ng-repeat="group in variable.ordinal($index, rows)">
                 {{ group }}
               </li>
             </ol>
-            <ul ng-switch-when="quantitative">...</ul>
-            <ul ng-switch-when="absolute" >
+
+            <ul ng-switch-else>
               <li ng-repeat="group in variable.groups">
                 <!-- TODO: proper form validation -->
                 <form>

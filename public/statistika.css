@@ -35,7 +35,7 @@ p.error {
   color: red;
 }
 
-.icon-reorder {
+i.icon-reorder {
   font-size: 150%;
 }
 
@@ -58,4 +58,14 @@ tr[ng-repeat] td {
 
 #data tbody tr:last-child{
   margin-bottom: 1em;
+}
+
+li[class^="icon-"], li[class*=" icon-"] {
+  display: list-item;
+}
+
+li[class^="icon-"]::before, li[class*=" icon-"]::before {
+  margin-left: -2.5em;
+  margin-right: 1.33em;
+  cursor: move;
 }

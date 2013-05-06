@@ -32,14 +32,21 @@ function Variable(name) {
   this.order = [];
 }
 
-Variable.prototype.ordinal = function (index, rows) {
-  var order = this.order;
-  var ordinal = _.chain(rows).
+Variable.prototype.columns = function(index, rows) {
+  return _.chain(rows).
     map(function(row) { return row.columns[index].value; }).
-    uniq().
-    sortBy(function(value) { var i; return (i = order.indexOf(value)) == -1 ? undefined : i; } ).
+    uniq().value();
+};
 
-    value();
+Variable.prototype.nominal = function(index, rows) {
+  return this.columns(index, rows);
+};
+
+Variable.prototype.ordinal = function(index, rows) {
+  var order = this.order;
+  var ordinal = _(this.columns(index, rows)).
+                  sortBy(function(value) { var i; return (i = order.indexOf(value)) == -1 ? undefined : i; } );
+
   this.order = ordinal;
   return ordinal;
 };
@@ -196,7 +203,7 @@ function VariablesCtrl($scope){
   };
 
   $scope.canAddGroup = function(variable) {
-    return variable.scale === "absolute";
+    return variable.scale === "absolute" || variable.scale === "quantitative";
   };
 
   $scope.ordinalOptions = function(index) {
