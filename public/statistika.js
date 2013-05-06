@@ -4,7 +4,6 @@ var persist = statistika.persist = new Persist.Store('Statistika');
 statistika.factory('$exceptionHandler', function ($log) {
   var reset = Store.reset("Bohužel vaše uložená data nejsou kompatabilní s novou verzí. Chcete je smazat?");
   var log = $log.error;
-  var report;
 
   return function(error, cause) {
     // does not work right now :(
@@ -12,6 +11,16 @@ statistika.factory('$exceptionHandler', function ($log) {
 
     (window.location.hostname == 'localhost' ? log : reset).apply(log, arguments);
   };
+});
+
+statistika.filter('decimal', function() {
+  var DEFAULT_PLACES = 2;
+  return function(rational, places) {
+    if(!places)
+      places = DEFAULT_PLACES;
+
+    return rational.toDecimal(places);
+  }
 });
 
 function Header(variables){
@@ -42,51 +51,40 @@ Variable.prototype.ordinal = function(column) {
     var i; return (i = order.indexOf(value)) == -1 ? undefined : i;
   });
 
-  this.order = ordinal;
-  return ordinal;
+  this.order = _(ordinal).uniq();
+  return this.order;
 };
 
 Variable.prototype.absolute = Variable.prototype.quantitative = function(index, rows) {
   return this.groups;
 };
 
-Variable.grouping = {
-  quantitative: function(group) {
-     return group.min <= this && this < group.max;
-  },
-  qualitative: function(group) {
-    return this == group;
-  }
-};
-
-Variable.prototype.grouping = function(){
+Variable.prototype.matching = function() {
   switch(this.scale) {
     case 'absolute':
     case 'quantitative':
-      return Variable.grouping.quantitative;
+      return function(group, value) {
+        return group.min <= value && value < group.max;
+      };
 
     case 'nominal':
     case 'ordinal':
-      return Variable.grouping.qualitative;
+      return function(group, value) {
+        return value == group;
+      };
 
     default:
-      throw new Error('uknown scale: ' + scale);
-  }
+      throw new Error('unknown scale: ' + this.scale);
+  };
 };
 
-Variable.prototype.elementGroups = function(column) {
-  var groups = this[this.scale](column);
-  var grouping = this.grouping();
-  return _(column).groupBy(function(value) {
-    return _(groups).find(_(grouping).bind(value));
-  });
+Variable.prototype.filter = function(group){
+  return _(this.matching()).partial(group);
 };
 
-Variable.prototype.elements = function(group) {
-  var grouping = this.grouping();
-
-};
-
+Variable.prototype.group = function(column){
+  return this.scale ? this[this.scale](column) : [];
+}
 
 Variable.create = function(object) {
   var variable = Object.create(Variable.prototype);
@@ -221,21 +219,6 @@ function MainCtrl($scope) {
 
   $scope.reset = Store.reset("Opravdu vymazat všechna uložená data?");
 
-  $scope.column = function(variable) {
-    var index = $scope.variables.indexOf(variable);
-    return $scope.rows.map(function(row) { return row.columns[index].value; });
-  };
-
-  $scope.groups = function(variable){
-    var column = $scope.column(variable);
-    return variable[variable.scale](column);
-  };
-
-
-}
-
-
-function VariablesCtrl($scope){
   $scope.scales = [
     new Scale("nominal", "nominální"),
     new Scale("ordinal", "ordinální"),
@@ -243,21 +226,36 @@ function VariablesCtrl($scope){
     new Scale("absolute", "absolutní metrická")
   ];
 
-  $scope.addGroup = function(variable) {
+  $scope.column = function(variable){
+    var index = $scope.variables.indexOf(variable);
+    if(index == -1) {
+      return;
+    }
+
+    return $scope.rows.map(function(row) { return row.columns[index].value; });
+  }
+}
+
+function VariableCtrl($scope){
+  var variable = $scope.variable;
+  var column = $scope.column(variable);
+
+  $scope.groups = variable.group(column);
+
+  $scope.addGroup = function() {
     variable.groups.push(new Group(variable.scale));
   };
 
-  $scope.removeGroup = function(variable, group) {
+  $scope.removeGroup = function(group) {
     var index = variable.groups.indexOf(group);
     variable.groups.splice(index, 1);
   };
 
-  $scope.canAddGroup = function(variable) {
+  $scope.canAddGroup = function() {
     return variable.scale === "absolute" || variable.scale === "quantitative";
   };
 
-
-  $scope.ordinalOptions = function(index) {
+  $scope.ordinalOptions = function() {
     var options = {
       items: 'li',
       helper: 'clone',
@@ -265,9 +263,9 @@ function VariablesCtrl($scope){
       // using bind to set $scope as in the function there is no closure?!
       update: function(event, ui) {
         var items = $(event.target).find(options.items);
-        var variable = $scope.variables[index];
         $scope.$apply(function(){
-          variable.order = _(items).map(function(item) { return $(item).text().trim(); });
+          var groups = _(items).map(function(item) { return $(item).text().trim(); });
+          variable.order = _(groups).uniq();
         });
       }
     };
@@ -316,7 +314,7 @@ function DataCtrl($scope) {
     $scope.rows = _($scope.rows).sortBy(function(row) { return row.columns[column].value; });
 
     // cleanup old state
-    if(orderedBy) { delete orderedBy.order; }
+    if(orderedBy) { delete orderedBy.sort; }
 
     if(orderedBy === variable) {
       if(!reversed) {
@@ -328,7 +326,7 @@ function DataCtrl($scope) {
       reversed = null;
     }
 
-    variable.order = reversed ? 'desc' : 'asc';
+    variable.sort = reversed ? 'desc' : 'asc';
     sorted = true;
   };
 
@@ -348,10 +346,41 @@ function DataCtrl($scope) {
   };
 }
 
-function TablesCtrl($scope) {
-  $scope.elements = function(variable, group) {
-    var grouping = variable.grouping();
+function Element(variable, elements, group, column) {
+  var matching = variable.filter(group);
+  //var groups = variable.group(column);
+  var all = rational.fromInteger(column.length);
+  var values = column.filter(matching);
+  var absolute = rational.fromInteger(values.length);
+  var relative = absolute.divide(all);
+  var cumulative = elements.reduce(function(sum, element){ return sum.add(element.relative); }, relative);
+
+  this.index = elements.length;
+  this.group = group;
+  this.values = values;
+  this.absolute = absolute;
+  this.relative = relative;
+  this.cumulative = cumulative;
+}
+
+Element.prototype.moment = function(order){
+  var base = rational.fromInteger(this.index + 1).power(order);
+  return base.times(this.absolute);
+}
+
+function TableCtrl($scope) {
+  var getElements = function(variable){
+    var elements = [];
     var column = $scope.column(variable);
-    return _(column).filter(function(value) { return _(grouping).bind(value)(group); });
+    var groups = variable.group(column)
+
+    groups.forEach(function(group){
+      elements.push(new Element(variable, elements, group, column));
+    });
+
+    $scope.elements = elements;
   };
+
+  $scope.$watch('variable', getElements, true);
+  $scope.$watch('column(variable)', _(getElements).partial($scope.variable), true);
 }

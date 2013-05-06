@@ -23,6 +23,7 @@
     <script src="components/angular-ui/if.js"></script>
     <script src="components/persist-min.js"></script>
     <script src="components/underscore-min.js"></script>
+    <script src="components/rationaljs.alpha.js"></script>
     <script src="statistika.js" charset="utf-8"></script>
 
     <script async src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=AM_HTMLorMML"></script>
@@ -34,11 +35,11 @@
     </div>
 
     <div class="container">
-      <section ng-controller="VariablesCtrl" class="row">
+      <section class="row">
         <h1>Formulace statistického šetření</h1>
         <h2>Statistické znaky</h2>
 
-        <fieldset class="span4" ng-repeat="variable in header.variables">
+        <fieldset class="span4" ng-repeat="variable in header.variables" ng-controller="VariableCtrl">
           <h3 class="variable"><input type="text" ng-model="variable.name" ng-required="true"></h3>
           <label>
             <textarea ng-model="variable.description"
@@ -50,29 +51,29 @@
             </select>
           </label>
 
-          <h3>Skupiny <button ng-show="canAddGroup(variable)" ng-click="addGroup(variable)">&plus;</button></h3>
+          <h3>Skupiny <button ng-show="canAddGroup()" ng-click="addGroup()">&plus;</button></h3>
 
           <div ng-switch="variable.scale">
 
             <ul ng-switch-when="nominal">
-              <li ng-repeat="group in groups(variable)">
+              <li ng-repeat="group in groups">
                 {{ group }}
               </li>
             </ul>
 
-            <ol ng-switch-when="ordinal" ui-sortable="ordinalOptions($index)">
-              <li class="icon-reorder" ng-repeat="group in groups(variable)">
+            <ol ng-switch-when="ordinal" ui-sortable="ordinalOptions()">
+              <li class="icon-reorder" ng-repeat="group in groups">
                 {{ group }}
               </li>
             </ol>
 
             <ol ng-switch-default>
-              <li ng-repeat="group in groups(variable)">
+              <li ng-repeat="group in groups">
                 <!-- TODO: proper form validation -->
                 <form>
                   <input type="number" name="min" ng-model="group.min" ng-required="true">
                   <input type="number" name="max" ng-model="group.max" ng-required="true">
-                  <button ng-click="removeGroup(variable, group)">&minus;</button>
+                  <button ng-click="removeGroup(group)">&minus;</button>
                   <!-- refactor this massive condition -->
                   <p class="error" ui-if="group.min && group.max && group.min >= group.max">
                     minimum ({{group.min}}) musí být menší než maximum ({{group.max}})
@@ -82,7 +83,7 @@
                   </p>
                 </form>
               </li>
-            </ul>
+            </ol>
           </div>
         </fieldset>
       </section>
@@ -93,7 +94,7 @@
           <thead>
             <tr>
               <td/>
-              <td ng-click="orderBy(variable)" ng-repeat="variable in header.variables" class="sortable" ng-class="variable.order">
+              <td ng-click="orderBy(variable)" ng-repeat="variable in header.variables" class="sortable" ng-class="variable.sort">
                 {{ variable.name }}
               </td>
               <td>
@@ -123,9 +124,9 @@
         </table>
       </section>
 
-      <section ng-controller="TablesCtrl" class="row">
-        <h1>Tabulky</h1>
-        <table ng-repeat="variable in variables" class="table">
+      <section class="row" ng-repeat="variable in variables">
+        <h1>Tabulka {{ variable.name }}</h1>
+        <table class="table" ng-controller="TableCtrl">
           <thead>
             <tr>
               <th>škála</th>
@@ -150,10 +151,16 @@
 
           </thead>
           <tbody>
-            <tr ng-repeat="group in groups(variable)">
+            <tr ng-repeat="element in elements">
               <td>{{ $index  + 1}}</td>
-              <td>{{ group }}</td>
-              <td>{{ elements(variable, group) }}</td>
+              <td>{{ element.absolute | decimal}}</td>
+              <td>{{ element.relative | decimal }}</td>
+
+              <td>{{ element.cumulative | decimal }}</td>
+              <td>{{ element.moment(1) | decimal }}</td>
+              <td>{{ element.moment(2) | decimal }}</td>
+              <td>{{ element.moment(3) | decimal }}</td>
+              <td>{{ element.moment(4) | decimal }}</td>
             </tr>
           </tbody>
         </table>
