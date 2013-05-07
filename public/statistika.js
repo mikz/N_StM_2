@@ -16,11 +16,13 @@ statistika.factory('$exceptionHandler', function ($log) {
 statistika.filter('decimal', function() {
   var DEFAULT_PLACES = 2;
   return function(rational, places) {
+    if(!rational)
+      return;
     if(!places)
       places = DEFAULT_PLACES;
 
     return rational.toDecimal(places);
-  }
+  };
 });
 
 function Header(variables){
@@ -39,6 +41,7 @@ function Variable(name) {
   this.name = name;
   this.groups = [];
   this.order = [];
+  this.primary = true; // TODO: hack, make a select
 }
 
 Variable.prototype.nominal = function(column) {
@@ -75,7 +78,7 @@ Variable.prototype.matching = function() {
 
     default:
       throw new Error('unknown scale: ' + this.scale);
-  };
+  }
 };
 
 Variable.prototype.filter = function(group){
@@ -84,7 +87,7 @@ Variable.prototype.filter = function(group){
 
 Variable.prototype.group = function(column){
   return this.scale ? this[this.scale](column) : [];
-}
+};
 
 Variable.create = function(object) {
   var variable = Object.create(Variable.prototype);
@@ -93,6 +96,7 @@ Variable.create = function(object) {
   variable.scale = object.scale;
   variable.order = object.order || [];
   variable.groups = object.groups.map(Group.create);
+  variable.primary = true; // TODO: hack, make a select
   return variable;
 };
 
@@ -126,6 +130,10 @@ function Column(value) {
   this.value = value;
 }
 
+Column.prototype.copy = function(){
+  return new Column(this.value);
+};
+
 Column.create = function(object) {
   var column = Object.create(Column.prototype);
   column.value = object.value;
@@ -137,6 +145,11 @@ function Row(columns){
   this.columns = $.map(columns, function(value){ return new Column(value); });
   this.length = columns.length;
 }
+
+Row.prototype.copy = function(){
+  var columns = this.columns.map(function(column) { return column.value; });
+  return new Row(columns);
+};
 
 Row.create = function(object) {
   var row = Object.create(Row.prototype);
@@ -233,7 +246,7 @@ function MainCtrl($scope) {
     }
 
     return $scope.rows.map(function(row) { return row.columns[index].value; });
-  }
+  };
 }
 
 function VariableCtrl($scope){
@@ -300,6 +313,12 @@ function DataCtrl($scope) {
     $scope.unsorted();
   };
 
+  $scope.copyRow = function(row) {
+    var index = $scope.rows.indexOf(row);
+    var copy = row.copy();
+    $scope.rows.splice(index, 0, copy);
+  };
+
   $scope.updatePosition = function(from, to) {
     var elements = $scope.rows.splice(from, 1);
     $scope.rows.splice(to, 0, elements[0]);
@@ -357,6 +376,11 @@ function Element(variable, elements, group, column) {
   var cumulative = elements.reduce(function(sum, element){ return sum.add(element.relative); }, relative);
 
   this.index = elements.length;
+  if(group instanceof Group) {
+    this.description = group.min + " až " + group.max;
+  } else {
+    this.description = group;
+  }
   this.group = group;
   this.values = values;
   this.absolute = absolute;
@@ -367,21 +391,58 @@ function Element(variable, elements, group, column) {
 Element.prototype.moment = function(order){
   var base = rational.fromInteger(this.index + 1).power(order);
   return base.times(this.absolute);
+};
+
+function Sum(elements) {
+  var zero = rational.fromInteger(0);
+
+  this.elements = elements;
+
+  this.absolute = elements.reduce(function(sum, el) { return sum.add(el.absolute); }, zero);
+  this.relative = elements.reduce(function(sum, el) { return sum.add(el.relative); }, zero);
 }
 
-function TableCtrl($scope) {
-  var getElements = function(variable){
-    var elements = [];
+Sum.prototype.moment = function(order) {
+  return this.elements.reduce(function(sum, el) { return sum.add(el.moment(order)); }, rational.fromInteger(0));
+};
+
+function PrimaryVariableCtrl($scope) {
+  $scope.$watch('variables', function(variables){
+    console.log('changed variables');
+    $scope.variable = _($scope.variables).find(function(variable){ return variable.primary; });
+  });
+
+  /**
+  $scope.$watch('variable', function(variable){
+
     var column = $scope.column(variable);
-    var groups = variable.group(column)
+    $scope.groups = variable.group($scope.da);
+  });
+  **/
+
+  $scope.$watch('column(variable)', function(column){
+    console.log('changed column(variable)');
+    $scope.data = column;
+  }, true);
+
+  $scope.$watch('data', function(data) {
+    console.log('changed data');
+    $scope.groups = $scope.variable.group(data);
+  }, true);
+
+  $scope.$watch('groups', function(groups){
+    console.log('changed groups');
+    var elements = [];
+    var column = $scope.data;
+    var variable = $scope.variable;
 
     groups.forEach(function(group){
       elements.push(new Element(variable, elements, group, column));
     });
 
     $scope.elements = elements;
-  };
+    $scope.sum = new Sum(elements);
+  });
 
-  $scope.$watch('variable', getElements, true);
-  $scope.$watch('column(variable)', _(getElements).partial($scope.variable), true);
+
 }

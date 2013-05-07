@@ -118,15 +118,16 @@
               </td>
               <td>
                 <button ng-show="rows.length > 1" ng-click="removeRow(row)" title="remove row" tabindex="-1">&minus;</button>
+                <button ng-click="copyRow(row)" title="copy row" tabindex="-1">copy</button>
               </td>
             </tr>
           </tbody>
         </table>
       </section>
 
-      <section class="row" ng-repeat="variable in variables">
-        <h1>Tabulka {{ variable.name }}</h1>
-        <table class="table" ng-controller="TableCtrl">
+      <section class="row" ng-controller="PrimaryVariableCtrl">
+        <h1>Tabulka 1. SZ ({{ variable.name }})</h1>
+        <table class="table" >
           <thead>
             <tr>
               <th>škála</th>
@@ -148,14 +149,26 @@
               <th>`x_i^3*n_i`</th>
               <th>`x_i^4*n_i`</th>
             </tr>
-
           </thead>
+
+          <tfoot>
+            <tr>
+              <td>`sum`</td>
+              <td>{{ sum.absolute | decimal }}</td>
+              <td>{{ sum.relative | decimal }}</td>
+              <td/>
+              <td>{{ sum.moment(1) | decimal }}</td>
+              <td>{{ sum.moment(2) | decimal }}</td>
+              <td>{{ sum.moment(3) | decimal }}</td>
+              <td>{{ sum.moment(4) | decimal }}</td>
+            </td>
+          </tfoot>
+
           <tbody>
             <tr ng-repeat="element in elements">
-              <td>{{ $index  + 1}}</td>
+              <td title="{{ element.description }}">{{ element.index + 1 }}</td>
               <td>{{ element.absolute | decimal}}</td>
               <td>{{ element.relative | decimal }}</td>
-
               <td>{{ element.cumulative | decimal }}</td>
               <td>{{ element.moment(1) | decimal }}</td>
               <td>{{ element.moment(2) | decimal }}</td>
