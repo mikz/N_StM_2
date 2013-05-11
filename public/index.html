@@ -311,11 +311,25 @@
             <dl>
               <dt>kritická teoretická hodnota</dt>
               <dd>`chi_("teor")^2 = ` <span>{{sum.chi.teor | decimal }}</span></dd>
-              <dd>experimentální hodnota testovacího kritéria</dd>
+              <dt>experimentální hodnota testovacího kritéria</dt>
               <dd>`chi_("exp")^2 = ` <span>{{ sum.chi.exp | decimal }}</span></dd>
-              <dd>pravostranný kritický obor</dd>
+              <dt>pravostranný kritický obor</dt>
               <dd>`W = (chi^2`<sub class="chi">{{ sum.degrees_of_freedom }}</sub>` (`<span>{{p.value}}</span>`);oo) = (`<span>{{sum.chi.teor | decimal}}</span>`;oo)`</dd>
             </dl>
+          </section>
+
+          <section ng-controller="EstimatesCtrl">
+            <h2>Teorie odhadů</h2>
+            <h3>Bodové odhady</h3>
+            <p>`(mu-sigma;mu+sigma)=(O_1-S_x;O_1+S_x)`</p>
+            <p>`u_i=(x_i-O_1)/S_x`</p>
+            <p></p>
+            <h3>Intervalové odhady</h3>
+            <h4>Interval spolehlivosti pro rozptyl `sigma^2` pomocí `chi^2`-testu</h4>
+            <p>
+              `sigma^2 in (`<span>{{ interval.sq_min | decimal:3 }}</span>`;`<span>{{interval.sq_max | decimal:3 }}</span>`),`
+              `sigma in (`<span>{{interval.min | decimal:3 }}</span>`;`<span>{{interval.max | decimal:3 }}</span>`)`.
+            </p>
           </section>
         </section>
       </section>

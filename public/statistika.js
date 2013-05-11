@@ -472,18 +472,25 @@ function Test(distribution, tests, element, parameters) {
   this.index = i;
   this.count = element.absolute;
 
+
   switch(i){
     case 1:
-      this.interval = "(oo;"+ (i + 0.5) +":)";
-      this.bound = rational.fromDecimal(i + 0.5);
+      this.min = Number.NEGATIVE_INFINITY;
+      this.max = i + 0.5;
+      this.interval = "(-oo;"+ this.max +":)";
+      this.bound = rational.fromDecimal(this.max);
       break;
     case elements:
-      this.interval = "("+ (i - 0.5) +";oo)";
+      this.min = i - 0.5;
+      this.max = Number.POSITIVE_INFINITY;
+      this.interval = "("+ this.min +";oo)";
       this.bound = new rational(1,0); // infinity
       break;
     default:
-      this.interval = "("+ (i - 0.5) +";"+ (i + 0.5) +":)";
-      this.bound = rational.fromDecimal(i + 0.5);
+      this.min = i - 0.5;
+      this.max = i + 0.5;
+      this.interval = "("+ this.min +";"+ this.max +":)";
+      this.bound = rational.fromDecimal(this.max);
       break;
   }
 
@@ -645,4 +652,33 @@ function ExperimentalValueTestCtrl($scope) {
 
     $scope.groups = groups;
   }, true);
+}
+
+function IntervalEstimate(p, params) {
+  this.parameters = params;
+  this.p = p;
+  this.n = this.parameters.length;
+  this.sq_min = this.critical_value(p.value/2);
+  this.sq_max = this.critical_value(1-(p.value/2));
+  this.min = this.sq_min.sqrt();
+  this.max = this.sq_max.sqrt();
+}
+
+IntervalEstimate.prototype.critical_value = function(confidence){
+  var degrees = this.n.subtract(one).toDecimal();
+  var chisquare = jStat.chisquare(degrees).inv(1 - confidence);
+  return this.parameters.central_moment(2).times(this.n).divide(rational.fromDecimal(chisquare));
+}
+
+function EstimatesCtrl($scope){
+  $scope.p = new P();
+
+  $scope.$watch('parameters', function(params){
+    $scope.interval = new IntervalEstimate($scope.p, params);
+  }, true);
+
+  $scope.$watch('p', function(p){
+    $scope.interval = new IntervalEstimate(p, $scope.parameters);
+  }, true);
+
 }
