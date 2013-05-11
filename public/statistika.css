@@ -38,7 +38,9 @@ p.error {
 i.icon-reorder {
   font-size: 150%;
 }
-
+td.row input {
+  width: 5em;
+}
 /* the FUCK? who wants 10px bottom margin? */
 *[ng-repeat] > input, li[ng-repeat] form, li[ng-repeat] > form > input {
   margin-bottom: 0;
