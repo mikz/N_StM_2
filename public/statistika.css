@@ -71,3 +71,15 @@ li[class^="icon-"]::before, li[class*=" icon-"]::before {
   margin-right: 1.33em;
   cursor: move;
 }
+
+tr[ui-droppable].ui-state-active {
+    background: #ffff00;
+}
+tr[ui-droppable].ui-state-hover {
+    background: red;
+}
+
+sub.chi {
+    margin-left: -0.75em;
+    bottom: -0.75em;
+}

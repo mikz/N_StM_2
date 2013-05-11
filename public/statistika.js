@@ -5,6 +5,27 @@ rational.prototype.sqrt = function() { var b=rat.create(); rat.sqrt(b, this.a); 
 var one = rational.fromInteger(1);
 var zero = rational.fromInteger(0);
 
+statistika.value('uiDroppableConfig', {}).directive('uiDroppable', function(uiDroppableConfig) {
+  return {
+    restrict:'A',
+
+    link: function(scope, element, attrs) {
+      options = angular.extend({}, uiDroppableConfig, scope.$eval(attrs.uiDroppable));
+      element.droppable(options);
+    }
+  };
+});
+
+statistika.value('uiDraggableConfig', {}).directive('uiDraggable', function(uiDraggableConfig) {
+  return {
+    restrict:'A',
+    link: function(scope, element, attrs) {
+      options = angular.extend({}, uiDraggableConfig, scope.$eval(attrs.uiDraggable));
+      element.draggable(options);
+    }
+  };
+});
+
 statistika.factory('$exceptionHandler', function ($log) {
   var reset = Store.reset("Bohužel vaše uložená data nejsou kompatabilní s novou verzí. Chcete je smazat?");
   var log = $log.error;
@@ -359,7 +380,7 @@ Sum.prototype.reduce = function(attr) {
   if(typeof(attr) == 'function'){
     reduce = attr;
   } else {
-    reduce = function(el) { return el[attr]; };
+    reduce = function(el) { var val = el[attr]; return _.isUndefined(val) ? zero : val; };
   }
   return this.elements.reduce(function(sum, el){ return sum.add(reduce(el)); }, zero);
 }
@@ -430,12 +451,19 @@ function StatsCtrl($scope) {
 }
 
 function Test(distribution, tests, element, parameters) {
+  var elements = parameters.elements.length;
   var i = parameters.elements.indexOf(element);
   var previous = tests[i - 1];
   var mid_index = ++i + 0.5;
 
   var mean = parameters.mean;
   var deviation = parameters.standard_deviation;
+
+  deviation = rational.fromInteger(1);
+  if(mid_index > elements){
+    mid_index = Number.POSITIVE_INFINITY;
+  }
+
   var distribution = jStat[distribution](mean.toDecimal(), deviation.toDecimal()).cdf(mid_index);
 
   this.distribution = distribution;
@@ -449,7 +477,7 @@ function Test(distribution, tests, element, parameters) {
       this.interval = "(oo;"+ (i + 0.5) +":)";
       this.bound = rational.fromDecimal(i + 0.5);
       break;
-    case parameters.elements.length:
+    case elements:
       this.interval = "("+ (i - 0.5) +";oo)";
       this.bound = new rational(1,0); // infinity
       break;
@@ -505,4 +533,116 @@ function TheoreticTestCtrl($scope) {
   $scope.$watch('tests', function(tests){
     $scope.test = tests[index];
   });
+}
+
+function TestGroup() {
+  this.tests = [];
+}
+
+TestGroup.prototype.addTest = function(test){
+  this.tests.push(test);
+
+  this.index = this.tests.map(function(t){ return t.index; }).join(' + ');
+  this.real  = this.reduce(function(t) { return t.count });
+  this.test  = this.reduce(function(t) { return t.absolute });
+  this.chi   = this.real.subtract(this.test).power(2).divide(this.test);
+};
+
+TestGroup.prototype.reduce = function(reduce){
+  return this.tests.reduce(function(sum, test){ return sum.add(reduce(test)); }, zero);
+};
+
+TestGroup.prototype.merge = function(groups){
+  var base = this;
+
+  groups.forEach(function(group){
+    group.tests.forEach(function(test){
+      base.addTest(test);
+    })
+  });
+};
+
+function GroupSum(p, groups) {
+  if(_.isUndefined(groups))
+    groups = [];
+
+  var rows = 2;
+  var chisquare, exp, teor;
+
+  this.groups = this.elements = groups;
+  this.degrees_of_freedom = groups.length - rows -1;
+
+  chisquare = jStat.chisquare(this.degrees_of_freedom);
+
+  exp = this.reduce(function(group){ return group.chi; });
+  teor = chisquare.inv(1 - p.value);
+
+  this.chi = { exp: exp, teor: teor};
+}
+
+GroupSum.prototype.reduce = Sum.prototype.reduce;
+
+function P(value){
+  this.default = 0.05;
+  this.value = _.isUndefined(value) ? this.default : value;
+}
+
+function ExperimentalValueTestCtrl($scope) {
+  // TODO: persist group merging
+
+  $scope.p = new P();
+
+  $scope.dragOptions = {
+    scope: 'groups',
+    containment: 'parent',
+    revert: 'invalid',
+    helper: 'clone'
+  };
+
+  $scope.dropOptions = {
+    scope: 'groups',
+    activeClass: 'ui-state-active',
+    hoverClass: 'ui-state-hover',
+    tolerance: 'pointer',
+    accept: function(drag) {
+      return drag[0] != this;
+    },
+    over: function(event, ui) {
+      console.debug(event, ui);
+    },
+    drop: function(event, ui) {
+      var index = ui.draggable.scope().$index;
+      var dropped = $(this).scope().group;
+
+      $(this).scope().mergeGroups(dropped, index);
+    }
+  }
+
+  $scope.mergeGroups = function(base, index) {
+    $scope.$apply(function(){
+      var removed = $scope.groups.splice(index, 1);
+      base.merge(removed);
+    });
+  };
+
+  $scope.$watch('p', function(p){
+    $scope.sum = new GroupSum(p, $scope.groups);
+  }, true);
+
+  $scope.$watch('groups', function(groups){
+    $scope.sum = new GroupSum($scope.p, groups);
+  }, true);
+
+  $scope.$watch('tests', function(tests){
+    var groups = [];
+    var group;
+
+    tests.forEach(function(test){
+      group = new TestGroup();
+      group.addTest(test);
+      groups.push(group);
+    });
+
+    $scope.groups = groups;
+  }, true);
 }

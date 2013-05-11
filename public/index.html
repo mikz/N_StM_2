@@ -249,7 +249,6 @@
                 <th>`F(u_i)`</th>
                 <th>`p_i`</th>
                 <th>`np_i`</th>
-                <!-- <th>`(n_i - np_i)^2 / (np_i)`</th> -->
               </tr>
             </thead>
             <tfoot>
@@ -261,7 +260,6 @@
                 <td></td>
                 <td></td>
                 <td>{{ sum.absolute | decimal:4 }}</td>
-                <!-- <td>`chi^2 =` {{ sum.reduce('chi') | decimal }}</td> -->
               </tr>
             </tfoot>
             <tbody>
@@ -271,12 +269,54 @@
                 <td>{{ test.count | decimal }}</td>
                 <td>{{ test.upper_bound | decimal:5 }}</td>
                 <td>{{ test.distribution | decimal:2 }}</td>
-                <td>{{ test.relative | decimal:2 }}</td>
+                <td>{{ test.relative | decimal:3 }}</td>
                 <td>{{ test.absolute | decimal:4 }}</td>
-                <!-- <td>{{ test.chi | decimal:3 }}</td> -->
               </tr>
             </tbody>
           </table>
+
+          <section ng-controller="ExperimentalValueTestCtrl">
+            <h2>Experimentální hodnota testového kritéria</h2>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>`x_i`</th>
+                  <th>`n_i`</th>
+                  <th>`np_i`</th>
+                  <th>`(n_i - np_i)^2 / (np_i)`</th>
+                </tr>
+              </thead>
+              <tfoot>
+                <tr>
+                  <td>`sum`</td>
+                  <td>{{ sum.reduce('real') | decimal }}</td>
+                  <td>{{ sum.reduce('test') | decimal }}</td>
+                  <td>{{ sum.reduce('chi')  | decimal }}</td>
+                </tr>
+              </tfoot>
+              <tbody>
+                <tr ui-draggable="dragOptions" ui-droppable="dropOptions" ng-repeat="group in groups">
+                  <td>{{ group.index }}</td>
+                  <td>{{ group.real | decimal }}</td>
+                  <td>{{ group.test | decimal }}</td>
+                  <td>{{ group.chi  | decimal:3 }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <p>
+              Hladina statistické významnosti
+              `alpha = `<input type="number" ng-model="p.value" step="0.01" min="0" placeholder="0.05"/>.
+            </p>
+            <dl>
+              <dt>kritická teoretická hodnota</dt>
+              <dd>`chi_("teor")^2 = ` <span>{{sum.chi.teor | decimal }}</span></dd>
+              <dd>experimentální hodnota testovacího kritéria</dd>
+              <dd>`chi_("exp")^2 = ` <span>{{ sum.chi.exp | decimal }}</span></dd>
+              <dd>pravostranný kritický obor</dd>
+              <dd>`W = (chi^2`<sub class="chi">{{ sum.degrees_of_freedom }}</sub>` (`<span>{{p.value}}</span>`);oo) = (`<span>{{sum.chi.teor | decimal}}</span>`;oo)`</dd>
+            </dl>
+          </section>
         </section>
       </section>
     </div>
