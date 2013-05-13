@@ -83,3 +83,8 @@ sub.chi {
     margin-left: -0.75em;
     bottom: -0.75em;
 }
+
+figure figcaption {
+    text-align: center;
+    font-weight: bold;
+}

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title>Interaktivní statistické metody</title>
-    <!-- <link rel="stylesheet" href="components/normalize.css"> -->
+    <link rel="stylesheet" href="components/normalize.css">
     <link rel="stylesheet" href="components/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="components/bootstrap/bootstrap-responsive.min.css">
     <link rel="stylesheet" href="components/font-awesome/css/font-awesome.min.css">
@@ -34,6 +34,8 @@
   </head>
 
   <body ng-controller="MainCtrl">
+    <script src="//www.google.com/jsapi"></script>
+    <script src="components/chartkick.js"></script>
 
     <div class="navbar navbar-inverse">
       <div class="navbar-inner">
@@ -73,7 +75,7 @@
             </select>
           </label>
 
-          <h3>Skupiny <button ng-show="canAddGroup()" ng-click="addGroup()">&plus;</button></h3>
+          <h3>Skupiny <button class="btn" ng-show="canAddGroup()" ng-click="addGroup()">&plus;</button></h3>
 
           <div ng-switch="variable.scale">
 
@@ -95,7 +97,7 @@
                 <form>
                   <input type="number" name="min" ng-model="group.min" ng-required="true">
                   <input type="number" name="max" ng-model="group.max" ng-required="true">
-                  <button ng-click="removeGroup(group)">&minus;</button>
+                  <button class="btn" ng-click="removeGroup(group)">&minus;</button>
                   <!-- refactor this massive condition -->
                   <p class="error" ui-if="group.min && group.max && group.min >= group.max">
                     minimum ({{group.min}}) musí být menší než maximum ({{group.max}})
@@ -121,7 +123,7 @@
               </td>
               <td>absolutní četnost</td>
               <td>
-                <button ng-click="addRow()" title="add row">&plus; řádek</button>
+                <button class="btn" ng-click="addRow()" title="add row">&plus; řádek</button>
               </td>
             </tr>
             </thead>
@@ -135,9 +137,9 @@
               <td>
                 <input type="number" ng-model="row.count">
               </td>
-              <td>
-                <button ng-show="rows.length > 1" ng-click="removeRow(row)" title="remove row" tabindex="-1">&minus;</button>
-                <button ng-click="copyRow(row)" title="copy row" tabindex="-1">copy</button>
+              <td class="btn-group">
+                <button class="btn" ng-show="rows.length > 1" ng-click="removeRow(row)" title="remove row" tabindex="-1">&minus;</button>
+                <button class="btn" ng-click="copyRow(row)" title="copy row" tabindex="-1">copy</button>
               </td>
             </tr>
             </tbody>
@@ -197,6 +199,18 @@
             </tr>
           </tbody>
         </table>
+
+        <div class="row-fluid">
+          <figure class="span6">
+            <div ng-column-chart="absoluteChart"></div>
+            <figcaption>Polygon absolutních četností.</figcaption>
+          </figure>
+
+          <figure class="span6">
+            <div ng-column-chart="cumulativeChart"></div>
+            <figcaption>Polygon kumulativních četností.</figcaption>
+          </figure>
+        </div>
 
         <h2>Empirické parametry</h2>
         <table class="table">

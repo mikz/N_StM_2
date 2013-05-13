@@ -16,6 +16,20 @@ statistika.value('uiDroppableConfig', {}).directive('uiDroppable', function(uiDr
   };
 });
 
+statistika.directive('ngColumnChart', function() {
+  return {
+    restrict:'A',
+    link: function(scope, elements, attrs) {
+      scope.$watch(attrs.ngColumnChart, _.debounce(function(dataSource){
+        elements.each(function(){
+          console.debug(dataSource);
+          $(this).data('chart', new Chartkick.ColumnChart(this, dataSource));
+        });
+      }, 1000));
+    }
+  };
+});
+
 statistika.value('uiDraggableConfig', {}).directive('uiDraggable', function(uiDraggableConfig) {
   return {
     restrict:'A',
@@ -478,6 +492,15 @@ function StatsCtrl($scope) {
     $scope.sum = new Sum(elements);
     $scope.parameters = new Parameters($scope.sum);
   }, true);
+
+  $scope.$watch('elements', function(elements){
+    $scope.absoluteChart = elements.map(function(element){
+      return [ element.row.group, element.absolute.toDecimal()];
+    });
+    $scope.cumulativeChart = elements.map(function(element){
+      return [ element.row.group, element.cumulative.toDecimal()];
+    });
+  });
 }
 
 function Test(distribution, tests, element, parameters) {
