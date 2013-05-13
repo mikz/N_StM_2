@@ -155,9 +155,9 @@ Scale.find = function(name) {
 
 Scale.repo = {};
 
-function Row(group){
+function Row(group, count){
   this.group = group;
-  this.count = 1;
+  this.count = count || 1;
 }
 
 Row.prototype.copy = function(){
@@ -199,14 +199,18 @@ function Store(name, filter) {
     if(filter) {
       newVal = newVal.filter(filter);
     }
-
-    persist.set(name, JSON.stringify(newVal));
+    Store.set(name, newVal);
   };
+}
+
+Store.set = function(key, value) {
+  persist.set(key, JSON.stringify(value));
 }
 
 Store.keys = [];
 
-Store.get = function($scope, name, transform) {
+Store.get = function(name, transform) {
+  transform = _.isUndefined(transform) ? Store.noop : transform;
   var persisted = persist.get(name);
 
   if(persisted) {
@@ -218,6 +222,8 @@ Store.get = function($scope, name, transform) {
 
   return persisted;
 };
+
+Store.noop = function(val){ return val; }
 
 Store.setup = function($scope, name, filter) {
   Store.keys.push(name);
@@ -247,10 +253,34 @@ function MainCtrl($scope) {
   Store.setup($scope, 'variable');
   Store.setup($scope, 'rows');
 
-  $scope.rows = Store.get($scope, 'rows', function(rows) { return rows.map(Row.create); }) || [$scope.newRow()];
-  $scope.variable = Store.get($scope, 'variable', Variable.create) || new Variable('proměnná');
+  $scope.rows = Store.get('rows', function(rows) { return rows.map(Row.create); }) || [$scope.newRow()];
+  $scope.variable = Store.get('variable', Variable.create) || new Variable('proměnná');
 
   $scope.reset = Store.reset("Opravdu vymazat všechna uložená data?");
+
+  $scope.load = function(what){
+    switch(what){
+      case 'health':
+        var variable = $.extend(new Variable('úspěšnost léčby'), {
+          description: 'úspěšnost metody léčby daného typu nádorového onemocnění',
+          scale: 'nominal'
+        });
+        Store.clear();
+        Store.set('variable', variable);
+        Store.set('rows', [
+          new Row('A', 9), new Row('B', 15),
+          new Row('C', 20), new Row('D', 4),
+          new Row('E', 2)
+        ]);
+        Store.set('distribution', 'normal');
+        Store.set('merged_groups', [[4,5]]);
+        break;
+    }
+
+    if(confirm("Data načena. Znovu načíst stránku?")){
+      window.location.reload();
+    }
+  }
 
   $scope.scales = [
     new Scale("nominal", "nominální"),
@@ -508,7 +538,7 @@ function DistributionCtrl($scope) {
 
   Store.setup($scope, 'distribution');
 
-  $scope.distribution = Store.get($scope, 'distribution', function(val) { return val; })
+  $scope.distribution = Store.get('distribution');
 
   $scope.distributions =  [
     {name: 'normal', desc: 'normální'},
@@ -549,11 +579,16 @@ function TestGroup() {
 TestGroup.prototype.addTest = function(test){
   this.tests.push(test);
 
-  this.index = this.tests.map(function(t){ return t.index; }).join(' + ');
+  this.indexes = this.tests.map(function(t){ return t.index; });
+  this.index = this.indexes.join(' + ');
   this.real  = this.reduce(function(t) { return t.count });
   this.test  = this.reduce(function(t) { return t.absolute });
   this.chi   = this.real.subtract(this.test).power(2).divide(this.test);
 };
+
+TestGroup.prototype.isMerged = function(){
+  return this.indexes.length > 1;
+}
 
 TestGroup.prototype.reduce = function(reduce){
   return this.tests.reduce(function(sum, test){ return sum.add(reduce(test)); }, zero);
@@ -597,6 +632,8 @@ function P(value){
 function ExperimentalValueTestCtrl($scope) {
   // TODO: persist group merging
 
+  Store.setup($scope, 'merged_groups');
+  $scope.merged_groups = Store.get('merged_groups') || [];
   $scope.p = new P();
 
   $scope.dragOptions = {
@@ -629,8 +666,33 @@ function ExperimentalValueTestCtrl($scope) {
     $scope.$apply(function(){
       var removed = $scope.groups.splice(index, 1);
       base.merge(removed);
+      $scope.merged_groups.push(base.indexes);
     });
   };
+
+  $scope.split = function(group) {
+    var index = $scope.groups.indexOf(group);
+    var args = [];
+    var merges = [];
+
+    $scope.merged_groups.forEach(function(indexes){
+      if(!angular.equals(indexes, group.indexes)){
+        merges.push(indexes);
+      }
+    });
+    $scope.merged_groups = merges;
+
+    args.push(index);
+    args.push(1);
+
+    group.tests.forEach(function(test){
+      group = new TestGroup();
+      group.addTest(test);
+      args.push(group);
+    });
+
+    $scope.groups.splice.apply($scope.groups, args);
+  }
 
   $scope.$watch('p', function(p){
     $scope.sum = new GroupSum(p, $scope.groups);
@@ -642,12 +704,20 @@ function ExperimentalValueTestCtrl($scope) {
 
   $scope.$watch('tests', function(tests){
     var groups = [];
-    var group;
+    var merges = $scope.merged_groups;
+    var index, group, merge, fresh;
 
     tests.forEach(function(test){
-      group = new TestGroup();
+      index = test.index;
+      merge = _(merges).find(function(group) { return group.indexOf(index) != -1 });
+      fresh = !merge || merge.indexOf(index) == 0;
+
+      if(fresh) {
+        group = new TestGroup();
+        groups.push(group);
+      }
+
       group.addTest(test);
-      groups.push(group);
     });
 
     $scope.groups = groups;

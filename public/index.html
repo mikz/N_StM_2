@@ -2,7 +2,7 @@
 <html ng-app="statistika">
   <head>
     <meta charset="utf-8">
-    <link rel="stylesheet" href="components/normalize.css">
+    <!-- <link rel="stylesheet" href="components/normalize.css"> -->
     <link rel="stylesheet" href="components/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="components/bootstrap/bootstrap-responsive.min.css">
     <link rel="stylesheet" href="components/font-awesome/css/font-awesome.min.css">
@@ -25,22 +25,42 @@
     <script src="components/underscore-min.js"></script>
     <script src="components/rationaljs.alpha.js"></script>
     <script src="components/jstat.js"></script>
+
     <script src="statistika.js"></script>
 
+    <script async src="components/bootstrap/bootstrap.min.js"></script>
     <script async src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=AM_HTMLorMML"></script>
   </head>
 
   <body ng-controller="MainCtrl">
-    <div id="reset-persisted-data">
-      <button ng-click="reset()">vymazat data</button>
+
+    <div class="navbar navbar-inverse">
+      <div class="navbar-inner">
+        <a class="brand" href="#">Statistika</a>
+
+        <div class="btn-group">
+          <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+            nahrát ukázková data
+            <span class="caret"></span>
+          </a>
+
+          <ul class="dropdown-menu">
+            <li><a href="#" ng-click="load('health')">zdravotnická data</a></li>
+          </ul>
+
+          <a href="#" class="btn" ng-click="reset()">vymazat data</a>
+        </div>
+      </div>
     </div>
 
     <div class="container">
+
       <section class="row">
         <h1>Formulace statistického šetření</h1>
-        <h2>Statistický znak</h2>
 
         <fieldset class="span4" ng-controller="VariableCtrl">
+          <h2>Statistický znak</h2>
+
           <h3 class="variable"><input type="text" ng-model="variable.name" ng-required="true"></h3>
           <label>
             <textarea ng-model="variable.description"
@@ -87,12 +107,12 @@
             </ol>
           </div>
         </fieldset>
-      </section>
 
-      <section ng-controller="DataCtrl" class="row">
-        <h1>Data</h1>
-        <table id="data">
-          <thead>
+        <section class="span8" ng-controller="DataCtrl">
+          <h2>Výběrový statistický soubor</h2>
+
+          <table id="data">
+            <thead>
             <tr>
               <td/>
               <td>
@@ -103,9 +123,9 @@
                 <button ng-click="addRow()" title="add row">&plus; řádek</button>
               </td>
             </tr>
-          </thead>
+            </thead>
 
-          <tbody ui-sortable="sortableOptions">
+            <tbody ui-sortable="sortableOptions">
             <tr ng-repeat="row in rows">
               <td><i class="icon-reorder"></i></td>
               <td>
@@ -119,12 +139,13 @@
                 <button ng-click="copyRow(row)" title="copy row" tabindex="-1">copy</button>
               </td>
             </tr>
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </section>
       </section>
 
       <section class="row" ng-controller="StatsCtrl">
-        <h1>Tabulka 1. SZ ({{ variable.name }})</h1>
+        <h1>Tabulka<!-- 1. SZ ({{ variable.name }})--></h1>
         <table class="table" >
           <thead>
             <tr>
@@ -296,7 +317,10 @@
               </tfoot>
               <tbody>
                 <tr ui-draggable="dragOptions" ui-droppable="dropOptions" ng-repeat="group in groups">
-                  <td>{{ group.index }}</td>
+                  <td>
+                    {{ group.index }}
+                    <button ng-show="group.isMerged()" ng-click="split(group)">rozdělit</button>
+                  </td>
                   <td>{{ group.real | decimal }}</td>
                   <td>{{ group.test | decimal }}</td>
                   <td>{{ group.chi  | decimal:3 }}</td>
