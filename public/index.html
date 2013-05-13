@@ -58,9 +58,8 @@
 
     <div class="container">
 
-      <section class="row">
-        <h1>Formulace statistického šetření</h1>
-
+      <h1>Formulace statistického šetření</h1>
+      <div class="row">
         <fieldset class="span4" ng-controller="VariableCtrl">
           <h2>Statistický znak</h2>
 
@@ -145,9 +144,11 @@
             </tbody>
           </table>
         </section>
-      </section>
+      </div>
 
-      <section class="row" ng-controller="StatsCtrl">
+      <hr/>
+
+      <section ng-controller="StatsCtrl">
         <h1>Tabulka<!-- 1. SZ ({{ variable.name }})--></h1>
         <table class="table" >
           <thead>
@@ -256,6 +257,9 @@
           </tbody>
         </table>
 
+
+        <hr/>
+
         <section ng-controller="DistributionCtrl">
           <h1>Neparametrické testování</h1>
           <h2>Teoretické rozdělení</h2>
@@ -356,6 +360,8 @@
               <dd>`W = (chi^2`<sub class="chi">{{ sum.degrees_of_freedom }}</sub>` (`<span>{{p.value}}</span>`);oo) = (`<span>{{sum.chi.teor | decimal}}</span>`;oo)`</dd>
             </dl>
           </section>
+
+          <hr/>
 
           <section ng-controller="EstimatesCtrl">
             <h2>Teorie odhadů</h2>
