@@ -1,0 +1,389 @@
+<!doctype html>
+<html ng-app="statistika">
+  <head>
+    <meta charset="utf-8">
+    <title>Interaktivní statistické metody</title>
+    <link rel="stylesheet" href="components/normalize.css">
+    <link rel="stylesheet" href="components/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="components/bootstrap/bootstrap-responsive.min.css">
+    <link rel="stylesheet" href="components/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="statistika.css">
+
+    <script>
+        var _errs=["518581baec196dbf56000431"];(function(a,b){a.onerror=function(){_errs.push(arguments)};
+        var d=function(){var a=b.createElement("script"),c=b.getElementsByTagName("script")[0];
+        a.src="//d15qhc0lu1ghnk.cloudfront.net/beacon.js";a.async=!0;
+        c.parentNode.insertBefore(a,c)};a.addEventListener?a.addEventListener("load",d,!1):
+        a.attachEvent("onload",d)})(window,document);
+    </script>
+
+    <script src="components/jquery/jquery-1.9.1.min.js"></script>
+    <script src="components/angular/angular.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1/jquery-ui.min.js"></script>
+    <script src="components/angular-ui/sortable.js"></script>
+    <script src="components/angular-ui/if.js"></script>
+    <script src="components/persist-min.js"></script>
+    <script src="components/underscore-min.js"></script>
+    <script src="components/rationaljs.alpha.js"></script>
+    <script src="components/jstat.js"></script>
+
+    <script src="statistika.js"></script>
+
+    <script async src="components/bootstrap/bootstrap.min.js"></script>
+    <script async src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=AM_HTMLorMML"></script>
+  </head>
+
+  <body ng-controller="MainCtrl">
+    <script src="//www.google.com/jsapi"></script>
+    <script src="components/chartkick.js"></script>
+
+    <div class="navbar navbar-inverse">
+      <div class="navbar-inner">
+        <a class="brand" href="#">Statistika</a>
+
+        <ul class="nav">
+          <li><a href=".">Úvod</a></li>
+          <li class="active"><a href="#">Základy statistiky</a></li>
+          <li><a href="n_stm_2.html">Finanční statistika</a></li>
+        </ul>
+
+        <div class="btn-group">
+          <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+            nahrát ukázková data
+            <span class="caret"></span>
+          </a>
+
+          <ul class="dropdown-menu">
+            <li><a href="#" ng-click="load('health')">zdravotnická data</a></li>
+          </ul>
+
+          <a href="#" class="btn" ng-click="reset()">vymazat data</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      <h1>Formulace statistického šetření</h1>
+      <div class="row">
+        <fieldset class="span4" ng-controller="VariableCtrl">
+          <h2>Statistický znak</h2>
+
+          <h3 class="variable"><input type="text" ng-model="variable.name" ng-required="true"></h3>
+          <label>
+            <textarea ng-model="variable.description"
+                      placeholder="Description of your variable"></textarea>
+          </label>
+          <label>
+            <select ng-model="variable.scale" ng-options="scale.key as scale.description for scale in scales">
+              <option value=""></option>
+            </select>
+          </label>
+
+          <h3>Skupiny <button class="btn" ng-show="canAddGroup()" ng-click="addGroup()">&plus;</button></h3>
+
+          <div ng-switch="variable.scale">
+
+            <ul ng-switch-when="nominal">
+              <li ng-repeat="group in groups">
+                {{ group }}
+              </li>
+            </ul>
+
+            <ol ng-switch-when="ordinal" ui-sortable="ordinalOptions()">
+              <li class="icon-reorder" ng-repeat="group in groups">
+                {{ group }}
+              </li>
+            </ol>
+
+            <ol ng-switch-default>
+              <li ng-repeat="group in groups">
+                <!-- TODO: proper form validation -->
+                <form>
+                  <input type="number" name="min" ng-model="group.min" ng-required="true">
+                  <input type="number" name="max" ng-model="group.max" ng-required="true">
+                  <button class="btn" ng-click="removeGroup(group)">&minus;</button>
+                  <!-- refactor this massive condition -->
+                  <p class="error" ui-if="group.min && group.max && group.min >= group.max">
+                    minimum ({{group.min}}) musí být menší než maximum ({{group.max}})
+                  </p>
+                  <p class="error" ui-if="variable.groups[$index + 1] && group.max != variable.groups[$index + 1].min">
+                    nenavazuje na dalsi skupinu ({{ group.max }} != {{ variable.groups[$index + 1].min }})
+                  </p>
+                </form>
+              </li>
+            </ol>
+          </div>
+        </fieldset>
+
+        <section class="span8" ng-controller="DataCtrl">
+          <h2>Výběrový statistický soubor</h2>
+
+          <table id="data">
+            <thead>
+            <tr>
+              <td/>
+              <td>
+                {{ variable.name }}
+              </td>
+              <td>absolutní četnost</td>
+              <td>
+                <button class="btn" ng-click="addRow()" title="add row">&plus; řádek</button>
+              </td>
+            </tr>
+            </thead>
+
+            <tbody ui-sortable="sortableOptions">
+            <tr ng-repeat="row in rows">
+              <td><i class="icon-reorder"></i></td>
+              <td>
+                <input type="text" ng-model="row.group">
+              </td>
+              <td>
+                <input type="number" ng-model="row.count">
+              </td>
+              <td class="btn-group">
+                <button class="btn" ng-show="rows.length > 1" ng-click="removeRow(row)" title="remove row" tabindex="-1">&minus;</button>
+                <button class="btn" ng-click="copyRow(row)" title="copy row" tabindex="-1">copy</button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <hr/>
+
+      <section ng-controller="StatsCtrl">
+        <h1>Tabulka<!-- 1. SZ ({{ variable.name }})--></h1>
+        <table class="table" >
+          <thead>
+            <tr>
+              <th>škála</th>
+              <th>absolutní četnosti</th>
+              <th>relativní četnosti</th>
+              <th>kumulativní četnosti</th>
+              <th>obecný moment 1. řádu</th>
+              <th>obecný moment 2. řádu</th>
+              <th>obecný moment 3. řádu</th>
+              <th>obecný moment 4. řádu</th>
+            </tr>
+            <tr>
+              <th>`x_i`</th>
+              <th>`n_i`</th>
+              <th>`n_i/n`</th>
+              <th>`sum n_i/n`</th>
+              <th>`x_i*n_i`</th>
+              <th>`x_i^2*n_i`</th>
+              <th>`x_i^3*n_i`</th>
+              <th>`x_i^4*n_i`</th>
+            </tr>
+          </thead>
+
+          <tfoot>
+            <tr>
+              <td>`sum`</td>
+              <td>{{ sum.absolute | decimal }}</td>
+              <td>{{ sum.relative | decimal }}</td>
+              <td/>
+              <td>{{ sum.moment(1) | decimal }}</td>
+              <td>{{ sum.moment(2) | decimal }}</td>
+              <td>{{ sum.moment(3) | decimal }}</td>
+              <td>{{ sum.moment(4) | decimal }}</td>
+            </tr>
+          </tfoot>
+
+          <tbody>
+            <tr ng-repeat="row in rows" ng-controller="ElementController">
+              <td class="row group"><input type="text" ng-model="row.group" /></td>
+              <td class="row count"><input type="number" ng-model="row.count" /></td>
+              <td>{{ element.relative | decimal }}</td>
+              <td>{{ element.cumulative | decimal }}</td>
+              <td>{{ element.moment(1) | decimal }}</td>
+              <td>{{ element.moment(2) | decimal }}</td>
+              <td>{{ element.moment(3) | decimal }}</td>
+              <td>{{ element.moment(4) | decimal }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="row-fluid">
+          <figure class="span6">
+            <div ng-column-chart="absoluteChart"></div>
+            <figcaption>Polygon absolutních četností.</figcaption>
+          </figure>
+
+          <figure class="span6">
+            <div ng-column-chart="cumulativeChart"></div>
+            <figcaption>Polygon kumulativních četností.</figcaption>
+          </figure>
+        </div>
+
+        <h2>Empirické parametry</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Obecný moment 1. řádu</th>
+              <th>Obecný moment 2. řádu</th>
+              <th>Obecný moment 3. řádu</th>
+              <th>Obecný moment 4. řádu</th>
+              <th>Centrální moment 2. řádu</th>
+              <th>Centrální moment 3. řádu</th>
+              <th>Centrální moment 4. řádu</th>
+              <th>Normovaný moment 3. řádu</th>
+              <th>Normovaný moment 4. řádu</th>
+              <th>exces</th>
+            </tr>
+            <tr>
+              <th>`O_1`</th>
+              <th>`O_2`</th>
+              <th>`O_3`</th>
+              <th>`O_4`</th>
+              <th>`C_2`</th>
+              <th>`C_3`</th>
+              <th>`C_4`</th>
+              <th>`N_3`</th>
+              <th>`N_4`</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ parameters.general_moment(1) | decimal }} </td>
+              <td>{{ parameters.general_moment(2) | decimal }} </td>
+              <td>{{ parameters.general_moment(3) | decimal }} </td>
+              <td>{{ parameters.general_moment(4) | decimal }} </td>
+              <td>{{ parameters.central_moment(2) | decimal }} </td>
+              <td>{{ parameters.central_moment(3) | decimal }} </td>
+              <td>{{ parameters.central_moment(4) | decimal:3 }} </td>
+              <td>{{ parameters.normalized_moment(3) | decimal:3 }} </td>
+              <td>{{ parameters.normalized_moment(4) | decimal:3 }} </td>
+              <td>{{ parameters.exces | decimal:3 }} </td>
+            </tr>
+          </tbody>
+        </table>
+
+
+        <hr/>
+
+        <section ng-controller="DistributionCtrl">
+          <h1>Neparametrické testování</h1>
+          <h2>Teoretické rozdělení</h2>
+
+          <p>
+            Vybráno
+            <select ng-model="distribution" ng-options="dist.name as dist.desc for dist in distributions">
+              <option value=""></option>
+            </select>
+            rozdělení.
+          </p>
+
+          <div ng-switch="distribution">
+            <section ng-switch-when="normal">
+              <h3>Normální rozdělení</h3>
+              <p>popis....</p>
+            </section>
+          </div>
+
+          <table class="table">
+            <thead>
+              <tr>
+                <th>`x_i`</th>
+                <th>interval</th>
+                <th>`n_i`</th>
+                <th>`u_i`</th>
+                <th>`F(u_i)`</th>
+                <th>`p_i`</th>
+                <th>`np_i`</th>
+              </tr>
+            </thead>
+            <tfoot>
+              <tr>
+                <td>`sum`</td>
+                <td></td>
+                <td>{{ sum.length | decimal }}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>{{ sum.absolute | decimal:4 }}</td>
+              </tr>
+            </tfoot>
+            <tbody>
+              <tr ng-repeat="row in rows" ng-controller="TheoreticTestCtrl">
+                <td>{{ test.index}}</td>
+                <td>`{{ test.interval }}`</td>
+                <td>{{ test.count | decimal }}</td>
+                <td>{{ test.upper_bound | decimal:5 }}</td>
+                <td>{{ test.distribution | decimal:2 }}</td>
+                <td>{{ test.relative | decimal:3 }}</td>
+                <td>{{ test.absolute | decimal:4 }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <section ng-controller="ExperimentalValueTestCtrl">
+            <h2>Experimentální hodnota testového kritéria</h2>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>`x_i`</th>
+                  <th>`n_i`</th>
+                  <th>`np_i`</th>
+                  <th>`(n_i - np_i)^2 / (np_i)`</th>
+                </tr>
+              </thead>
+              <tfoot>
+                <tr>
+                  <td>`sum`</td>
+                  <td>{{ sum.reduce('real') | decimal }}</td>
+                  <td>{{ sum.reduce('test') | decimal }}</td>
+                  <td>{{ sum.reduce('chi')  | decimal }}</td>
+                </tr>
+              </tfoot>
+              <tbody>
+                <tr ui-draggable="dragOptions" ui-droppable="dropOptions" ng-repeat="group in groups">
+                  <td>
+                    {{ group.index }}
+                    <button ng-show="group.isMerged()" ng-click="split(group)">rozdělit</button>
+                  </td>
+                  <td>{{ group.real | decimal }}</td>
+                  <td>{{ group.test | decimal }}</td>
+                  <td>{{ group.chi  | decimal:3 }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <p>
+              Hladina statistické významnosti
+              `alpha = `<input type="number" ng-model="p.value" step="0.01" min="0" placeholder="0.05"/>.
+            </p>
+            <dl>
+              <dt>kritická teoretická hodnota</dt>
+              <dd>`chi_("teor")^2 = ` <span>{{sum.chi.teor | decimal }}</span></dd>
+              <dt>experimentální hodnota testovacího kritéria</dt>
+              <dd>`chi_("exp")^2 = ` <span>{{ sum.chi.exp | decimal }}</span></dd>
+              <dt>pravostranný kritický obor</dt>
+              <dd>`W = (chi^2`<sub class="chi">{{ sum.degrees_of_freedom }}</sub>` (`<span>{{p.value}}</span>`);oo) = (`<span>{{sum.chi.teor | decimal}}</span>`;oo)`</dd>
+            </dl>
+          </section>
+
+          <hr/>
+
+          <section ng-controller="EstimatesCtrl">
+            <h2>Teorie odhadů</h2>
+            <h3>Bodové odhady</h3>
+            <p>`(mu-sigma;mu+sigma)=(O_1-S_x;O_1+S_x)`</p>
+            <p>`u_i=(x_i-O_1)/S_x`</p>
+            <p></p>
+            <h3>Intervalové odhady</h3>
+            <h4>Interval spolehlivosti pro rozptyl `sigma^2` pomocí `chi^2`-testu</h4>
+            <p>
+              `sigma^2 in (`<span>{{ interval.sq_min | decimal:3 }}</span>`;`<span>{{interval.sq_max | decimal:3 }}</span>`),`
+              `sigma in (`<span>{{interval.min | decimal:3 }}</span>`;`<span>{{interval.max | decimal:3 }}</span>`)`.
+            </p>
+          </section>
+        </section>
+      </section>
+    </div>
+  </body>
+</html>
