@@ -26,11 +26,13 @@
     <script src="components/underscore-min.js"></script>
     <script src="components/rationaljs.alpha.js"></script>
     <script src="components/jstat.js"></script>
-
-    <script src="statistika.js"></script>
+    <script src="components/springy.js"></script>
+    <script src="components/springyui.js"></script>
 
     <script async src="components/bootstrap/bootstrap.min.js"></script>
     <script async src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=AM_HTMLorMML"></script>
+
+    <script src="finance.js"></script>
   </head>
 
   <body>
@@ -46,8 +48,65 @@
       </div>
     </div>
 
+
     <div class="container">
       <h1>Finanční statistika</h1>
+
+      <dl>
+        <dt>`t`</dt>
+        <dd>současné datum</dd>
+
+        <dt>`T`</dt>
+        <dd>den splatnosti</dd>
+
+        <dt>`tau` (`tau=T-t`)</dt>
+        <dd>čas do splatnosti</dd>
+
+        <dt>`S`</dt>
+        <dd>cena podkladového aktiva</dd>
+
+        <dt>`X`</dt>
+        <dd>expirační cena opce</dd>
+
+        <dt>`C`</dt>
+        <dd>hodnota kupní opce</dd>
+
+        <dt>`P`</dt>
+        <dd>hodnota prodejní opce</dd>
+
+        <dt>`r`</dt>
+        <dd>bezriziková úroková míra</dd>
+      </dl>
+
+      <section ng-controller="BinomalCtrl">
+        <h2>Binomický model</h2>
+
+        <p>`C = SB[n,a,b] - X(1+r)B[n,a,p]`</p>
+        <p>`P = SB[n,a,b] - X(1+r)B[n,a,p] - S + X(1+r)^-n`</p>
+
+        <canvas height="800" width="1170" id="viz"></canvas>
+
+        <table>
+          <tr>
+            <th>`n`</th>
+            <th>`S`</th>
+            <th>`X</th>
+            <th>`U`</th>
+            <th>`D`</th>
+            <th>`r`</th>
+          </tr>
+
+          <tr>
+            <td><input type="number" step="any" ng-model="tree.n"></td>
+            <td><input type="number" step="any" ng-model="tree.S"></td>
+            <td><input type="number" step="any" ng-model="tree.X"></td>
+            <td><input type="number" step="any" ng-model="tree.U"></td>
+            <td><input type="number" step="any" ng-model="tree.D"></td>
+            <td><input type="number" step="any" ng-model="tree.r"></td>
+          </tr>
+        </table>
+
+      </section>
     </div>
   </body>
 </html>
