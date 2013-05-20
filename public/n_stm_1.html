@@ -26,6 +26,7 @@
     <script src="components/underscore-min.js"></script>
     <script src="components/rationaljs.alpha.js"></script>
     <script src="components/jstat.js"></script>
+    <script src="components/flot/jquery.flot.js"></script>
 
     <script src="statistika.js"></script>
 
@@ -263,7 +264,6 @@
           </tbody>
         </table>
 
-
         <hr/>
 
         <section ng-controller="DistributionCtrl">
@@ -320,6 +320,10 @@
               </tr>
             </tbody>
           </table>
+
+
+          <div id="chart1" style="height: 30em" ng-distribution-chart="tests"></div>
+
 
           <section ng-controller="ExperimentalValueTestCtrl">
             <h2>Experimentální hodnota testového kritéria</h2>

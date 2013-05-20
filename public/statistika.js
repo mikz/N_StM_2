@@ -15,14 +15,33 @@ statistika.value('uiDroppableConfig', {}).directive('uiDroppable', function(uiDr
     }
   };
 });
+statistika.directive('ngDistributionChart', function() {
+  return {
+    restrict: 'A',
+    link: function(scope, elements, attrs) {
+      var distribution = scope.distribution;
+      var jstat = jStat[distribution];
 
+      scope.$watch(attrs.ngDistributionChart, _.debounce(function(tests){
+        var stat;
+        var first = tests[0];
+        var last = tests[tests.length-1];
+        var func = jStat.seq(0, last.index + 1, 100);
+        func = func.map(function(f){
+          return [f, first.jstat.pdf(f) ];
+        });
+        var real = tests.map(function(t){ return [ t.index, t.element.relative.toDecimal() ]});
+        $.plot(elements, [real, func]);
+      }));
+    }
+  }
+});
 statistika.directive('ngColumnChart', function() {
   return {
     restrict:'A',
     link: function(scope, elements, attrs) {
       scope.$watch(attrs.ngColumnChart, _.debounce(function(dataSource){
         elements.each(function(){
-          console.debug(dataSource);
           $(this).data('chart', new Chartkick.ColumnChart(this, dataSource));
         });
       }, 1000));
@@ -433,7 +452,7 @@ function Parameters(sum) {
   this.inverted = one.div(sum.absolute);
   this.sum = sum;
   this.elements = sum.elements;
-  this.standard_deviation = this.central_moment(2).sqrt();
+  this.std = this.central_moment(2).sqrt();
   this.mean = this.general_moment(1);
   this.exces = this.normalized_moment(4).subtract(rational.fromInteger(3));
   this.length = sum.absolute;
@@ -462,7 +481,7 @@ Parameters.prototype.central_moment = function(order){
 
 Parameters.prototype.normalized_moment = function(order){
   var general = this.general_moment(1);
-  var dev = this.standard_deviation;
+  var dev = this.std;
 
   return this.reduce(function(element){
     return element.relative.times( element.base.subtract(general).divide(dev).power(order) );
@@ -510,16 +529,21 @@ function Test(distribution, tests, element, parameters) {
   var mid_index = ++i + 0.5;
 
   var mean = parameters.mean;
-  var deviation = parameters.standard_deviation;
+  var deviation = parameters.std;
 
   deviation = rational.fromInteger(1);
   if(mid_index > elements){
     mid_index = Number.POSITIVE_INFINITY;
   }
 
-  var distribution = jStat[distribution](mean.toDecimal(), deviation.toDecimal()).cdf(mid_index);
+  var stat = jStat[distribution](mean.toDecimal(), deviation.toDecimal())
+
+  var distribution = stat.cdf(mid_index);
 
   this.distribution = distribution;
+  this.pdf = stat.pdf(mid_index);
+  this.jstat = stat;
+
   this.element = element;
   this.parameters = parameters;
   this.index = i;
