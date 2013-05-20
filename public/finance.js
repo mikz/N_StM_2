@@ -7,21 +7,33 @@ function BinomalTree(n, S, X, U, D, r){
   this.D = D;
   this.r = r;
 
-  this.u = 1 + U;
-  this.d = 1 + D;
-
   this.level = 1;
   this.n = n;
   this.name = "C";
   this.ops = [];
 
-  this.value = function() { return S; }
-
   this.description = this.name;
 }
 
+BinomalTree.prototype.call = function(){
+  var nodes = this.nodes();
+  return nodes.reduce(function(sum, n){ return sum + n.value() }, this.value());
+}
+
+BinomalTree.prototype.value = function(){
+  return this.get('S');
+}
+
+
 BinomalTree.prototype.get = function(name) {
-  return this[name];
+  switch(name){
+    case 'u':
+      return 1 + this.U;
+    case 'd':
+      return 1 + this.D;
+    default:
+      return this[name];
+  }
 }
 
 BinomalTree.prototype.children = function(){
@@ -71,13 +83,14 @@ function CallOpce(op, parent){
   ops = this.ops = parent.ops.slice(0);
   ops.push(op);
 
+  this.op = op;
   this.name = 'C' + ops.sort().join('');
   this.value = function() {
-    return parent[op] * parent.value();
+    return parent.get(op) * parent.value();
   }
 
   this.get = function(name){
-    return parent[name];
+    return parent.get(name);
   }
 
   this.diff = function() {
@@ -93,6 +106,11 @@ CallOpce.prototype.children = function(){
   }
 }
 
+CallOpce.prototype.inner = function(){
+  return this.get(this.op) * this.value();
+}
+
+
 CallOpce.prototype.nodes = function() {
   return [this, this.children().map(function(node){ return node.nodes() })];
 }
@@ -106,4 +124,8 @@ function BinomalCtrl($scope){
     $scope.graph.loadJSON(tree.toJSON());
     $('#viz').springy({graph: $scope.graph});
   }, true);
+
+  $scope.$watch('tree.call()', function(call) {
+    $scope.call = call;
+  });
 }
