@@ -59,6 +59,7 @@ statistika.value('uiDraggableConfig', {}).directive('uiDraggable', function(uiDr
   };
 });
 
+/**
 statistika.factory('$exceptionHandler', function ($log) {
   var reset = Store.reset("Bohužel vaše uložená data nejsou kompatabilní s novou verzí. Chcete je smazat?");
   var log = $log.error;
@@ -70,6 +71,7 @@ statistika.factory('$exceptionHandler', function ($log) {
     (window.location.hostname == 'localhost' ? log : reset).apply(log, arguments);
   };
 });
+//**/
 
 statistika.filter('decimal', function() {
   var DEFAULT_PLACES = 2;
